@@ -27,7 +27,10 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +59,73 @@ var makeCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		r, err := cmd.PersistentFlags().GetStringArray("range")
+		if err != nil || len(r) != 3 {
+			log.Fatal("Fatal range")
+		}
+
+		signame, err := cmd.PersistentFlags().GetString("signame")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := FireTask(ml, vtp, vtn, Range{Start: r[0], Stop: r[1], Step: r[2]}, dir, signame); err != nil {
+			log.Fatal(err)
+		}
+
 	},
+}
+
+func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame string) error {
+	log.Printf("Starting Simulation Set\n\tVtp = %s\n\tVtn = %s\n\tRangeStart = %s\n\tRangeStop = %s\n\tRangeStep = %s\n", vtp, vtn, r.Start, r.Stop, r.Step)
+
+	cnt := 0
+	index := 0
+
+	wg := new(sync.WaitGroup)
+
+	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
+	log.Print("start simulation")
+	s.Suffix = fmt.Sprintf(" Dispatch Tasks")
+	s.Writer = os.Stderr
+	s.Start()
+	defer s.Stop()
+	for _, v := range ms {
+		wg.Add(1)
+		go func(cnt int) {
+
+			// write SPI/ACE script
+			if err := write(v, dst, []byte(makeSPI(vtn, vtp, v)), []byte(makeACEScript(signame, r.Start, r.Stop, r.Step))); err != nil {
+				log.Fatal(err)
+			}
+
+			// copyTemplate to dist dir
+			if err := copyTemplate(v, dst); err != nil {
+				log.Fatal(err)
+			}
+
+			// start simulation
+			fmt.Printf("cd %s && hspice -hpp -mt 4 ./input.spi > ./hspice.log && wv -ace_no_gui ./extract.ace -k > ./wv.log && ", path.Join(dst, v))
+			fmt.Printf("cat store.csv | sed '1,1d;/^#/d'|awk -F, '{print $2}'|xargs -n3 > %s.csv && ", v)
+			fmt.Printf("cat %s.csv | awk '$1>=0.4&&$3>=0.4{print}'| wc -l\n", v)
+
+			time.Sleep(time.Duration(cnt+1) * time.Second)
+
+			index++
+			log.Print(" Dispatch Tasks (", index, "/", len(ms), ")")
+			wg.Done()
+		}(cnt)
+		cnt++
+	}
+	s.FinalMSG = "All Tasks Ended"
+	wg.Wait()
+	return nil
+}
+
+type Range struct {
+	Start string
+	Stop  string
+	Step  string
 }
 
 func makeSPI(vtn string, vtp string, monte string) string {
@@ -122,8 +191,8 @@ v36 vdd! v3 dc=0 pulse ( 0.8 0 4.75n 0.5n 0.5n 9.5n 20n )
 }
 
 //テンプレートをコピーするやつ
-func copyTemplates(montes []string, dstdir string) error {
-	srcdir := path.Join(os.Getenv("GOPATH"), "github.com/xztaityozx/UHA/templates/")
+func copyTemplate(monte string, dstdir string) error {
+	srcdir := path.Join(os.Getenv("GOPATH"), "src/github.com/xztaityozx/UHA/templates/")
 
 	mapSrc, err := os.Open(path.Join(srcdir, "resultsMap.xml"))
 	defer mapSrc.Close()
@@ -131,40 +200,44 @@ func copyTemplates(montes []string, dstdir string) error {
 		return err
 	}
 
-	for _, v := range montes {
-		dist, err := os.Open(path.Join(dstdir, v, "resultsMap.xml"))
-		defer dist.Close()
-		if err != nil {
-			return err
-		}
-
-		//Mapをコピー
-		io.Copy(dist, mapSrc)
-
-		resSrc, err := os.Open(path.Join(srcdir, v))
-		defer resSrc.Close()
-		if err != nil {
-			return err
-		}
-		resDst, err := os.Open(path.Join(dstdir, v, "results.xml"))
-		defer resDst.Close()
-		if err != nil {
-			return err
-		}
-
-		//results.xmlをコピー
-		io.Copy(resDst, resSrc)
-
+	mapDst, err := os.OpenFile(path.Join(dstdir, monte, "resultsMap.xml"), os.O_CREATE|os.O_WRONLY, 0644)
+	defer mapDst.Close()
+	if err != nil {
+		return err
 	}
 
+	if _, err := io.Copy(mapDst, mapSrc); err != nil {
+		return err
+	}
+
+	resSrc, err := os.Open(path.Join(srcdir, monte))
+	defer resSrc.Close()
+	if err != nil {
+		return err
+	}
+
+	resDst, err := os.OpenFile(path.Join(dstdir, monte, "results.xml"), os.O_CREATE|os.O_WRONLY, 0644)
+	defer resDst.Close()
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(resDst, resSrc); err != nil {
+		return err
+	}
 	return nil
 }
 
-//func makeACEScript(monte string, signame string) string {
+func makeACEScript(signame string, start string, stop string, step string) string {
+	return fmt.Sprintf(`set xml [ sx_open_wdf "resultsMap.xml" ]
+set www [ sx_find_wave_in_file $xml %s ]
+sx_export_csv on
+sx_export_range %s %s %s
+sx_export_data  "store.csv" $www
+	`, signame, start, stop, step)
+}
 
-//}
-
-func write(monte string, dir string, data []byte) error {
+func write(monte string, dir string, spi []byte, ace []byte) error {
 	if _, err := os.Stat(dir); err != nil {
 		log.Print("make ", dir)
 		if e := os.Mkdir(dir, 0755); e != nil {
@@ -180,9 +253,13 @@ func write(monte string, dir string, data []byte) error {
 		}
 	}
 
-	fp := path.Join(p, "input.spi")
+	fspi := path.Join(p, "input.spi")
+	if err := ioutil.WriteFile(fspi, spi, 0644); err != nil {
+		return err
+	}
 
-	return ioutil.WriteFile(fp, data, 0755)
+	face := path.Join(p, "extract.ace")
+	return ioutil.WriteFile(face, ace, 0644)
 }
 
 func init() {
@@ -192,4 +269,5 @@ func init() {
 	makeCmd.PersistentFlags().StringP("vtp", "p", "AGAUSS(0.6,0,1.0)", "vtpの値です")
 	makeCmd.PersistentFlags().StringSliceP("monte", "m", DEF_MOTES, "モンテカルロの回数です")
 	makeCmd.PersistentFlags().StringP("signame", "s", "N2", "プロットしたい信号線の名前です")
+	makeCmd.PersistentFlags().StringArrayP("range", "r", []string{"2.5ns", "17.5ns", "7.5ns"}, "時間を指定します")
 }

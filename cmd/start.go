@@ -21,8 +21,6 @@
 package cmd
 
 import (
-	"log"
-
 	"github.com/spf13/cobra"
 )
 
@@ -32,10 +30,10 @@ var startCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		distPath, err := cmd.PersistentFlags().GetString("out")
-		if err != nil {
-			log.Fatal(err)
-		}
+		//distPath, err := cmd.PersistentFlags().GetString("out")
+		//if err != nil {
+		//log.Fatal(err)
+		//}
 
 	},
 }
