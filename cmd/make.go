@@ -69,14 +69,19 @@ var makeCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if err := FireTask(ml, vtp, vtn, Range{Start: r[0], Stop: r[1], Step: r[2]}, dir, signame); err != nil {
+		simdir, err := cmd.PersistentFlags().GetString("simdir")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := FireTask(ml, vtp, vtn, Range{Start: r[0], Stop: r[1], Step: r[2]}, dir, signame, simdir); err != nil {
 			log.Fatal(err)
 		}
 
 	},
 }
 
-func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame string) error {
+func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame string, simdir string) error {
 	log.Printf("Starting Simulation Set\n\tVtp = %s\n\tVtn = %s\n\tRangeStart = %s\n\tRangeStop = %s\n\tRangeStep = %s\n", vtp, vtn, r.Start, r.Stop, r.Step)
 
 	cnt := 0
@@ -95,7 +100,7 @@ func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame 
 		go func(cnt int) {
 
 			// write SPI/ACE script
-			if err := write(v, dst, []byte(makeSPI(vtn, vtp, v)), []byte(makeACEScript(signame, r.Start, r.Stop, r.Step))); err != nil {
+			if err := write(v, dst, simdir, []byte(makeSPI(vtn, vtp, v)), []byte(makeACEScript(signame, r.Start, r.Stop, r.Step))); err != nil {
 				log.Fatal(err)
 			}
 
@@ -105,11 +110,13 @@ func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame 
 			}
 
 			// start simulation
-			fmt.Printf("cd %s && hspice -hpp -mt 4 ./input.spi > ./hspice.log && wv -ace_no_gui ./extract.ace -k > ./wv.log && ", path.Join(dst, v))
-			fmt.Printf("cat store.csv | sed '1,1d;/^#/d'|awk -F, '{print $2}'|xargs -n3 > %s.csv && ", v)
+			fmt.Printf("cd %s && \n", path.Join(dst, v))
+			fmt.Printf("hspice -hpp -mt 4 -i %s/input.spi -o ./hspice > ./hspice.log &&\n", simdir)
+			fmt.Printf("wv -ace_no_gui ./extract.ace -k > ./wv.log && \n", path.Join(dst, v))
+			fmt.Printf("cat store.csv | sed '/^#/d;1,1d'|awk -F, '{print $2}'|xargs -n3 > %s.csv && ", v)
 			fmt.Printf("cat %s.csv | awk '$1>=0.4&&$3>=0.4{print}'| wc -l\n", v)
 
-			time.Sleep(time.Duration(cnt+1) * time.Second)
+			//time.Sleep(time.Duration(cnt+1) * time.Second)
 
 			index++
 			log.Print(" Dispatch Tasks (", index, "/", len(ms), ")")
@@ -237,7 +244,7 @@ sx_export_data  "store.csv" $www
 	`, signame, start, stop, step)
 }
 
-func write(monte string, dir string, spi []byte, ace []byte) error {
+func write(monte string, dir string, spidir string, spi []byte, ace []byte) error {
 	if _, err := os.Stat(dir); err != nil {
 		log.Print("make ", dir)
 		if e := os.Mkdir(dir, 0755); e != nil {
@@ -253,7 +260,7 @@ func write(monte string, dir string, spi []byte, ace []byte) error {
 		}
 	}
 
-	fspi := path.Join(p, "input.spi")
+	fspi := path.Join(spidir, "input.spi")
 	if err := ioutil.WriteFile(fspi, spi, 0644); err != nil {
 		return err
 	}
@@ -268,6 +275,7 @@ func init() {
 	makeCmd.PersistentFlags().StringP("vtn", "n", "AGAUSS(0.6,0,1.0)", "vtnの値です")
 	makeCmd.PersistentFlags().StringP("vtp", "p", "AGAUSS(0.6,0,1.0)", "vtpの値です")
 	makeCmd.PersistentFlags().StringSliceP("monte", "m", DEF_MOTES, "モンテカルロの回数です")
-	makeCmd.PersistentFlags().StringP("signame", "s", "N2", "プロットしたい信号線の名前です")
+	makeCmd.PersistentFlags().StringP("signame", "g", "N2", "プロットしたい信号線の名前です")
 	makeCmd.PersistentFlags().StringArrayP("range", "r", []string{"2.5ns", "17.5ns", "7.5ns"}, "時間を指定します")
+	makeCmd.PersistentFlags().StringP("simdir", "d", "./", "シミュレーションディレクトリを指定します")
 }
