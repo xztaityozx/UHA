@@ -21,8 +21,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -32,8 +30,25 @@ var configCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("config called")
+		task := Task{
+			Config: config,
+		}
+
 	},
+}
+
+type Task struct {
+	Vtn     string
+	Vtp     string
+	SigName string
+	Config  Config
+	Monte   []string
+	Range   Range
+}
+
+type Config struct {
+	SimDir string
+	Dstdir string
 }
 
 func init() {

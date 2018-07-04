@@ -111,8 +111,8 @@ func FireTask(ms []string, vtp string, vtn string, r Range, dst string, signame 
 
 			// start simulation
 			fmt.Printf("cd %s && \n", path.Join(dst, v))
-			fmt.Printf("hspice -hpp -mt 4 -i %s/input.spi -o ./hspice > ./hspice.log &&\n", simdir)
-			fmt.Printf("wv -ace_no_gui ./extract.ace -k > ./wv.log && \n", path.Join(dst, v))
+			fmt.Printf("hspice -hpp -mt 4 -i %s/input.spi -o ./hspice &> ./hspice.log &&\n", simdir)
+			fmt.Printf("wv -ace_no_gui ./extract.ace -k &> ./wv.log && \n")
 			fmt.Printf("cat store.csv | sed '/^#/d;1,1d'|awk -F, '{print $2}'|xargs -n3 > %s.csv && ", v)
 			fmt.Printf("cat %s.csv | awk '$1>=0.4&&$3>=0.4{print}'| wc -l\n", v)
 
@@ -271,11 +271,11 @@ func write(monte string, dir string, spidir string, spi []byte, ace []byte) erro
 
 func init() {
 	rootCmd.AddCommand(makeCmd)
-	makeCmd.PersistentFlags().StringP("out", "o", path.Join("/home", os.Getenv("USER"), "WorkSpace/result/"), "出力先のディレクトリです")
+	makeCmd.PersistentFlags().StringP("out", "o", "", "出力先のディレクトリです")
 	makeCmd.PersistentFlags().StringP("vtn", "n", "AGAUSS(0.6,0,1.0)", "vtnの値です")
 	makeCmd.PersistentFlags().StringP("vtp", "p", "AGAUSS(0.6,0,1.0)", "vtpの値です")
 	makeCmd.PersistentFlags().StringSliceP("monte", "m", DEF_MOTES, "モンテカルロの回数です")
 	makeCmd.PersistentFlags().StringP("signame", "g", "N2", "プロットしたい信号線の名前です")
 	makeCmd.PersistentFlags().StringArrayP("range", "r", []string{"2.5ns", "17.5ns", "7.5ns"}, "時間を指定します")
-	makeCmd.PersistentFlags().StringP("simdir", "d", "./", "シミュレーションディレクトリを指定します")
+	makeCmd.PersistentFlags().StringP("simdir", "d", "", "シミュレーションディレクトリを指定します")
 }

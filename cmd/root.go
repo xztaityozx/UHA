@@ -22,7 +22,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -30,6 +32,8 @@ import (
 )
 
 var cfgFile string
+
+var config Config
 
 var DEF_MOTES = []string{"100", "200", "500", "1000", "2000", "5000", "10000", "20000", "50000"}
 
@@ -58,7 +62,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.UHA.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".UHA.json"), "config file (default is $HOME/.UHA.json)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -88,5 +92,9 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	if err := viper.Unmarshal(&config); err != nil {
+		log.Fatal(err)
 	}
 }
