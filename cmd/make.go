@@ -274,7 +274,7 @@ func init() {
 	makeCmd.PersistentFlags().StringP("out", "o", "", "出力先のディレクトリです")
 	makeCmd.PersistentFlags().StringP("vtn", "n", "AGAUSS(0.6,0,1.0)", "vtnの値です")
 	makeCmd.PersistentFlags().StringP("vtp", "p", "AGAUSS(0.6,0,1.0)", "vtpの値です")
-	makeCmd.PersistentFlags().StringSliceP("monte", "m", DEF_MOTES, "モンテカルロの回数です")
+	makeCmd.PersistentFlags().StringSliceP("monte", "m", config.Monte, "モンテカルロの回数です")
 	makeCmd.PersistentFlags().StringP("signame", "g", "N2", "プロットしたい信号線の名前です")
 	makeCmd.PersistentFlags().StringArrayP("range", "r", []string{"2.5ns", "17.5ns", "7.5ns"}, "時間を指定します")
 	makeCmd.PersistentFlags().StringP("simdir", "d", "", "シミュレーションディレクトリを指定します")

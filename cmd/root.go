@@ -59,13 +59,14 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".UHA.json"), "config file (default is $HOME/.UHA.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".UHA.json"), "config file ")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
+	viper.SetDefault("Monte", DEF_MOTES)
+	viper.SetDefault("Range", Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"})
+	viper.SetDefault("SimDir", "")
+	viper.SetDefault("Dstdir", "")
+	viper.SetDefault("Repositorys", []Repository{})
+
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
@@ -95,6 +96,16 @@ func initConfig() {
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func SaveConfig(c Config) {
+	viper.Set("Monte", c.Monte)
+	viper.Set("Range", c.Range)
+	viper.Set("SimDir", c.SimDir)
+	viper.Set("Dstdir", c.Dstdir)
+	if err := viper.WriteConfigAs(cfgFile); err != nil {
 		log.Fatal(err)
 	}
 }
