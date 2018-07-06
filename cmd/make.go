@@ -45,9 +45,9 @@ func makeTask() Task {
 	}
 
 	//Vtp
-	t.Config.Vtp.Voltage = strconv.ParseFloat(getValue("Vtpの中央値です(default : ", t.Config.Vtp.Voltage, ")", string(t.Config.Vtp.Voltage)), 64)
-	t.Config.Vtp.Sigma = strconv.ParseFloat(getValue("Vtpの中央値です(default : ", t.Config.Vtp.Sigma, ")", string(t.Config.Vtp.Sigma)), 64)
-	t.Config.Vtp.Deviation = strconv.ParseFloat(getValue("Vtpの中央値です(default : ", t.Config.Vtp.Deviation, ")", string(t.Config.Vtp.Deviation)), 64)
+	t.Config.Vtp.Voltage = strconv.ParseFloat(getValue(fmt.Sprintf("Vtpの中央値です(default : %f)\n"), string(t.Config.Vtp.Voltage)), 64)
+	t.Config.Vtp.Sigma = strconv.ParseFloat(getValue(fmt.Sprintf("Vtpの中央値です(default : %f)\n", t.Config.Vtp.Sigma), string(t.Config.Vtp.Sigma)), 64)
+	t.Config.Vtp.Deviation = strconv.ParseFloat(getValue(fmt.Sprintf("Vtpの中央値です(default : %f)\n", t.Config.Vtp.Deviation), string(t.Config.Vtp.Deviation)), 64)
 
 	//Vtn
 	t.Config.Vtn.Voltage = strconv.ParseFloat(getValue("Vtnの中央値です(default : ", t.Config.Vtn.Voltage, ")", string(t.Config.Vtn.Voltage)), 64)
