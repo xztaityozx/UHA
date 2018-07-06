@@ -59,13 +59,16 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".UHA.json"), "config file ")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".config", "UHA", ".UHA.json"), "config file ")
 
 	viper.SetDefault("Monte", DEF_MOTES)
 	viper.SetDefault("Range", Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"})
 	viper.SetDefault("SimDir", "")
 	viper.SetDefault("Dstdir", "")
 	viper.SetDefault("Repositorys", []Repository{})
+	viper.SetDefault("Vtp", Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0})
+	viper.SetDefault("Vtn", Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0})
+	viper.SetDefault("TaskDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "task"))
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
@@ -104,7 +107,7 @@ func SaveConfig(c Config) {
 	viper.Set("Monte", c.Monte)
 	viper.Set("Range", c.Range)
 	viper.Set("SimDir", c.SimDir)
-	viper.Set("Dstdir", c.Dstdir)
+	viper.Set("Dstdir", c.DstDir)
 	if err := viper.WriteConfigAs(cfgFile); err != nil {
 		log.Fatal(err)
 	}

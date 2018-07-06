@@ -7,6 +7,7 @@ type Config struct {
 	DstDir     string
 	Vtp        Node
 	Vtn        Node
+	TaskDir    string
 	Repository []Repository
 }
 
