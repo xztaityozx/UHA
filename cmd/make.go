@@ -38,7 +38,7 @@ import (
 // makeCmd represents the make command
 var makeCmd = &cobra.Command{
 	Use:   "make",
-	Short: "",
+	Short: "タスクを生成します",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		makeTask()
