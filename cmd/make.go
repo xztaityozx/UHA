@@ -39,7 +39,10 @@ import (
 var makeCmd = &cobra.Command{
 	Use:   "make",
 	Short: "タスクを生成します",
-	Long:  ``,
+	Long: `対話形式でシミュレーションセットを作成します。
+作成されたセットは "UHA run"コマンドで実行することができます。
+
+Usage : UHA make`,
 	Run: func(cmd *cobra.Command, args []string) {
 		makeTask()
 	},
@@ -47,65 +50,65 @@ var makeCmd = &cobra.Command{
 
 func makeTask() {
 	t := Task{
-		Config: config,
+		Simulation: config.Simulation,
 	}
 
 	//Vtp
-	pv := getValue(fmt.Sprintf("Vtpの電圧です(default : %.4f)\n", t.Config.Vtp.Voltage), fmt.Sprint(t.Config.Vtp.Voltage))
+	pv := getValue(fmt.Sprintf("Vtpの電圧です(default : %.4f)\n", t.Simulation.Vtp.Voltage), fmt.Sprint(t.Simulation.Vtp.Voltage))
 	var pe error
-	t.Config.Vtp.Voltage, pe = strconv.ParseFloat(pv, 64)
+	t.Simulation.Vtp.Voltage, pe = strconv.ParseFloat(pv, 64)
 	if pe != nil {
 		log.Fatal(pe)
 	}
-	ps := getValue(fmt.Sprintf("Vtpのシグマです(default : %.4f)\n", t.Config.Vtp.Sigma), fmt.Sprint(t.Config.Vtp.Sigma))
-	t.Config.Vtp.Sigma, pe = strconv.ParseFloat(ps, 64)
+	ps := getValue(fmt.Sprintf("Vtpのシグマです(default : %.4f)\n", t.Simulation.Vtp.Sigma), fmt.Sprint(t.Simulation.Vtp.Sigma))
+	t.Simulation.Vtp.Sigma, pe = strconv.ParseFloat(ps, 64)
 	if pe != nil {
 		log.Fatal(pe)
 	}
 
-	pd := getValue(fmt.Sprintf("Vtpの中央値です(default : %.4f)\n", t.Config.Vtp.Deviation), fmt.Sprint(t.Config.Vtp.Deviation))
-	t.Config.Vtp.Deviation, pe = strconv.ParseFloat(pd, 64)
+	pd := getValue(fmt.Sprintf("Vtpの中央値です(default : %.4f)\n", t.Simulation.Vtp.Deviation), fmt.Sprint(t.Simulation.Vtp.Deviation))
+	t.Simulation.Vtp.Deviation, pe = strconv.ParseFloat(pd, 64)
 	if pe != nil {
 		log.Fatal(pe)
 	}
 	//Vtn
-	nv := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Config.Vtn.Voltage), fmt.Sprint(t.Config.Vtn.Voltage))
+	nv := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Voltage), fmt.Sprint(t.Simulation.Vtn.Voltage))
 	var ne error
-	t.Config.Vtn.Voltage, ne = strconv.ParseFloat(nv, 64)
+	t.Simulation.Vtn.Voltage, ne = strconv.ParseFloat(nv, 64)
 	if ne != nil {
 		log.Fatal(ne)
 	}
-	ns := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Config.Vtn.Sigma), fmt.Sprint(t.Config.Vtn.Sigma))
-	t.Config.Vtn.Sigma, ne = strconv.ParseFloat(ns, 64)
+	ns := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Sigma), fmt.Sprint(t.Simulation.Vtn.Sigma))
+	t.Simulation.Vtn.Sigma, ne = strconv.ParseFloat(ns, 64)
 	if ne != nil {
 		log.Fatal(ne)
 	}
 
-	nd := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Config.Vtn.Deviation), fmt.Sprint(t.Config.Vtn.Deviation))
-	t.Config.Vtn.Deviation, ne = strconv.ParseFloat(nd, 64)
+	nd := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Deviation), fmt.Sprint(t.Simulation.Vtn.Deviation))
+	t.Simulation.Vtn.Deviation, ne = strconv.ParseFloat(nd, 64)
 	if ne != nil {
 		log.Fatal(ne)
 	}
 
 	//Monte
-	fmt.Printf("モンテカルロの回数をカンマ区切りで入力してください(default : %v)\n", t.Config.Monte)
+	fmt.Printf("モンテカルロの回数をカンマ区切りで入力してください(default : %v)\n", t.Simulation.Monte)
 	if res := prompt.Input(">>> ", completer, prompt.OptionTitle("UHA make Task")); len(res) != 0 {
-		t.Config.Monte = strings.Split(res, ",")
+		t.Simulation.Monte = strings.Split(res, ",")
 	}
 
 	//Range
-	t.Config.Range.Start = getValue(fmt.Sprintf("書き出しを開始する時間です(default %s)\n", t.Config.Range.Start), t.Config.Range.Start)
-	t.Config.Range.Stop = getValue(fmt.Sprintf("書き出しを終了する時間です(default %s)\n", t.Config.Range.Stop), t.Config.Range.Stop)
-	t.Config.Range.Step = getValue(fmt.Sprintf("書き出しの刻み幅です(default %s)\n", t.Config.Range.Step), t.Config.Range.Step)
+	t.Simulation.Range.Start = getValue(fmt.Sprintf("書き出しを開始する時間です(default %s)\n", t.Simulation.Range.Start), t.Simulation.Range.Start)
+	t.Simulation.Range.Stop = getValue(fmt.Sprintf("書き出しを終了する時間です(default %s)\n", t.Simulation.Range.Stop), t.Simulation.Range.Stop)
+	t.Simulation.Range.Step = getValue(fmt.Sprintf("書き出しの刻み幅です(default %s)\n", t.Simulation.Range.Step), t.Simulation.Range.Step)
 
 	//DstDir
-	t.Config.DstDir = getValue(fmt.Sprintf("結果が書き出されるディレクトリです(default %s)\n", t.Config.DstDir), t.Config.DstDir)
+	t.Simulation.DstDir = getValue(fmt.Sprintf("結果が書き出されるディレクトリです(default %s)\n", t.Simulation.DstDir), t.Simulation.DstDir)
 	//SimDir
-	t.Config.SimDir = getValue(fmt.Sprintf("netlistが置かれるべきディレクトリです(default %s)\n", t.Config.SimDir), t.Config.SimDir)
+	t.Simulation.SimDir = getValue(fmt.Sprintf("netlistが置かれるべきディレクトリです(default %s)\n", t.Simulation.SimDir), t.Simulation.SimDir)
 
-	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtn:AGAUSS(%.4f,%.4f,%.4f)\n", t.Config.Vtn.Voltage, t.Config.Vtn.Sigma, t.Config.Vtn.Deviation, t.Config.Vtn.Voltage, t.Config.Vtn.Sigma, t.Config.Vtn.Deviation)
-	fmt.Printf("Monte:%v\n", t.Config.Monte)
-	fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Config.Range, t.Config.DstDir, t.Config.SimDir)
+	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtn:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation)
+	fmt.Printf("Monte:%v\n", t.Simulation.Monte)
+	fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Simulation.Range, t.Simulation.DstDir, t.Simulation.SimDir)
 
 	fmt.Println("この設定でシミュレーションタスクを発行します(y/n)")
 	ans := prompt.Input(">>> ", completer, prompt.OptionTitle("UHA make Task Confirm"))
@@ -122,7 +125,7 @@ func makeTask() {
 		}
 	}
 
-	j := path.Join(p, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Config.Vtn.Sigma, ".json"))
+	j := path.Join(p, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
 	b, err := json.Marshal(t)
 	if err != nil {

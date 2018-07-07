@@ -1,18 +1,30 @@
 package cmd
 
 type Config struct {
-	Monte      []string
-	Range      Range
-	SimDir     string
-	DstDir     string
-	Vtp        Node
-	Vtn        Node
-	TaskDir    string
-	Repository []Repository
+	Simulation  Simulation
+	TaskDir     string
+	DoneDir     string
+	Repository  []Repository
+	SpreadSheet SpreadSheet
+}
+
+type Simulation struct {
+	Monte  []string
+	Range  Range
+	SimDir string
+	DstDir string
+	Vtp    Node
+	Vtn    Node
+}
+
+type SpreadSheet struct {
+	Id        string
+	CSPath    string
+	TokenPath string
 }
 
 type Task struct {
-	Config Config
+	Simulation Simulation
 }
 
 type RepoType int
