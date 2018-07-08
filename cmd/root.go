@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -105,6 +106,15 @@ func initConfig() {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal(err)
 	}
+
+	//dir
+	ReserveDir = filepath.Join(config.TaskDir, RESERVE)
+	DoneDir = filepath.Join(config.TaskDir, DoneDir)
+	FailedDir = filepath.Join(config.TaskDir, FAILED)
+	tryMkdir(ReserveDir)
+	tryMkdir(DoneDir)
+	tryMkdir(FailedDir)
+
 }
 
 func SaveConfig(c Config) {

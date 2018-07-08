@@ -3,10 +3,13 @@ package cmd
 type Config struct {
 	Simulation  Simulation
 	TaskDir     string
-	DoneDir     string
 	Repository  []Repository
 	SpreadSheet SpreadSheet
 }
+
+var ReserveDir string
+var DoneDir string
+var FailedDir string
 
 type Simulation struct {
 	Monte  []string

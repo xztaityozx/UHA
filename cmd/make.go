@@ -117,11 +117,16 @@ func makeTask() {
 	}
 
 	p := config.TaskDir
+
+}
+
+func write(t Task, p string) error {
+	p = path.Join(p, "reserve")
 	if _, err := os.Stat(p); err != nil {
 		log.Println("Can not find task dir : ", config.TaskDir)
 		log.Println("Try to mkdir...")
 		if e := os.Mkdir(config.TaskDir, 0755); e != nil {
-			log.Fatal(e)
+			return e
 		}
 	}
 
@@ -129,13 +134,13 @@ func makeTask() {
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
 	b, err := json.Marshal(t)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := ioutil.WriteFile(j, b, os.ModePerm); err != nil {
-		log.Fatal(err)
+		return err
 	}
-
+	return nil
 }
 
 func completer(in prompt.Document) []prompt.Suggest {
