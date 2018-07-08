@@ -12,12 +12,16 @@ var DoneDir string
 var FailedDir string
 
 type Simulation struct {
-	Monte  []string
-	Range  Range
-	SimDir string
-	DstDir string
-	Vtp    Node
-	Vtn    Node
+	Monte     []string
+	Range     Range
+	Signal    string
+	SimDir    string
+	DstDir    string
+	LibDir    string
+	AddFile   string
+	ModelFile string
+	Vtp       Node
+	Vtn       Node
 }
 
 type SpreadSheet struct {

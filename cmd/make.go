@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -54,7 +53,7 @@ func makeTask() {
 	}
 
 	//Vtp
-	pv := getValue(fmt.Sprintf("Vtpの電圧です(default : %.4f)\n", t.Simulation.Vtp.Voltage), fmt.Sprint(t.Simulation.Vtp.Voltage))
+	pv := getValue(fmt.Sprintf("Vtpのしきい値電圧です(default : %.4f)\n", t.Simulation.Vtp.Voltage), fmt.Sprint(t.Simulation.Vtp.Voltage))
 	var pe error
 	t.Simulation.Vtp.Voltage, pe = strconv.ParseFloat(pv, 64)
 	if pe != nil {
@@ -72,13 +71,13 @@ func makeTask() {
 		log.Fatal(pe)
 	}
 	//Vtn
-	nv := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Voltage), fmt.Sprint(t.Simulation.Vtn.Voltage))
+	nv := getValue(fmt.Sprintf("Vtnのしきい値電圧です(default : %.4f)\n", t.Simulation.Vtn.Voltage), fmt.Sprint(t.Simulation.Vtn.Voltage))
 	var ne error
 	t.Simulation.Vtn.Voltage, ne = strconv.ParseFloat(nv, 64)
 	if ne != nil {
 		log.Fatal(ne)
 	}
-	ns := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Sigma), fmt.Sprint(t.Simulation.Vtn.Sigma))
+	ns := getValue(fmt.Sprintf("Vtnのシグマです(default : %.4f)\n", t.Simulation.Vtn.Sigma), fmt.Sprint(t.Simulation.Vtn.Sigma))
 	t.Simulation.Vtn.Sigma, ne = strconv.ParseFloat(ns, 64)
 	if ne != nil {
 		log.Fatal(ne)
@@ -106,6 +105,16 @@ func makeTask() {
 	//SimDir
 	t.Simulation.SimDir = getValue(fmt.Sprintf("netlistが置かれるべきディレクトリです(default %s)\n", t.Simulation.SimDir), t.Simulation.SimDir)
 
+	//LibDir
+	t.Simulation.LibDir = getValue(fmt.Sprintf("ライブラリのディレクトリです(default %s)\n", t.Simulation.LibDir), t.Simulation.LibDir)
+	//AddFile
+	t.Simulation.AddFile = getValue(fmt.Sprintf("addfileへのパスです(default %s)\n", t.Simulation.AddFile), t.Simulation.AddFile)
+	//ModelFile
+	t.Simulation.ModelFile = getValue(fmt.Sprintf("modelfileへのパスです(default %s)\n", t.Simulation.ModelFile), t.Simulation.ModelFile)
+
+	//Signal
+	t.Simulation.Signal = getValue(fmt.Sprintf("プロットしたい信号線名です(default %s)\n", t.Simulation.Signal), t.Simulation.Signal)
+
 	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtn:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation)
 	fmt.Printf("Monte:%v\n", t.Simulation.Monte)
 	fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Simulation.Range, t.Simulation.DstDir, t.Simulation.SimDir)
@@ -116,28 +125,22 @@ func makeTask() {
 		log.Fatal("UHA make Task has canceled")
 	}
 
-	p := config.TaskDir
-
+	if err := writeTask(t); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func write(t Task, p string) error {
-	p = path.Join(p, "reserve")
-	if _, err := os.Stat(p); err != nil {
-		log.Println("Can not find task dir : ", config.TaskDir)
-		log.Println("Try to mkdir...")
-		if e := os.Mkdir(config.TaskDir, 0755); e != nil {
-			return e
-		}
-	}
+func writeTask(t Task) error {
+	tryMkdir(ReserveDir)
 
-	j := path.Join(p, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
+	j := path.Join(ReserveDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
 	b, err := json.Marshal(t)
 	if err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(j, b, os.ModePerm); err != nil {
+	if err := ioutil.WriteFile(j, b, 0644); err != nil {
 		return err
 	}
 	return nil

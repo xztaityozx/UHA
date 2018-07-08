@@ -63,12 +63,16 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".config", "UHA", ".UHA.json"), "config file ")
 
 	viper.SetDefault("Simulation", Simulation{
-		Monte:  DEF_MOTES,
-		Range:  Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"},
-		SimDir: "",
-		DstDir: "",
-		Vtn:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
-		Vtp:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
+		Monte:     DEF_MOTES,
+		Range:     Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"},
+		SimDir:    "",
+		DstDir:    "",
+		LibDir:    "",
+		AddFile:   "",
+		ModelFile: "",
+		Signal:    "N2",
+		Vtn:       Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
+		Vtp:       Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
 	})
 	viper.SetDefault("Repositorys", []Repository{})
 	viper.SetDefault("TaskDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "task"))
@@ -109,7 +113,7 @@ func initConfig() {
 
 	//dir
 	ReserveDir = filepath.Join(config.TaskDir, RESERVE)
-	DoneDir = filepath.Join(config.TaskDir, DoneDir)
+	DoneDir = filepath.Join(config.TaskDir, DONE)
 	FailedDir = filepath.Join(config.TaskDir, FAILED)
 	tryMkdir(ReserveDir)
 	tryMkdir(DoneDir)
