@@ -112,9 +112,10 @@ func initConfig() {
 	}
 
 	//dir
-	ReserveDir = filepath.Join(config.TaskDir, RESERVE)
-	DoneDir = filepath.Join(config.TaskDir, DONE)
-	FailedDir = filepath.Join(config.TaskDir, FAILED)
+	TaskDir, _ := homedir.Expand(config.TaskDir)
+	ReserveDir = filepath.Join(TaskDir, RESERVE)
+	DoneDir = filepath.Join(TaskDir, DONE)
+	FailedDir = filepath.Join(TaskDir, FAILED)
 	tryMkdir(ReserveDir)
 	tryMkdir(DoneDir)
 	tryMkdir(FailedDir)

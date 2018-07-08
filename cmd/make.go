@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/c-bata/go-prompt"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
 
@@ -132,6 +133,13 @@ func makeTask() {
 
 func writeTask(t Task) error {
 	tryMkdir(ReserveDir)
+
+	// ~ resolve
+	t.Simulation.DstDir, _ = homedir.Expand(t.Simulation.DstDir)
+	t.Simulation.SimDir, _ = homedir.Expand(t.Simulation.SimDir)
+	t.Simulation.AddFile, _ = homedir.Expand(t.Simulation.AddFile)
+	t.Simulation.LibDir, _ = homedir.Expand(t.Simulation.LibDir)
+	t.Simulation.ModelFile, _ = homedir.Expand(t.Simulation.ModelFile)
 
 	j := path.Join(ReserveDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
