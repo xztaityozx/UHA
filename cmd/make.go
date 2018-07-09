@@ -44,15 +44,24 @@ var makeCmd = &cobra.Command{
 
 Usage : UHA make`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+		skip, err = cmd.PersistentFlags().GetBool("default")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		Sigma, err = cmd.PersistentFlags().GetFloat64("sigma")
+		if err != nil {
+			log.Fatal(err)
+		}
 		makeTask()
 	},
 }
 
-func makeTask() {
-	t := Task{
-		Simulation: config.Simulation,
-	}
+var Sigma float64
+var skip bool
 
+func interactive(t Task) Task {
 	//Vtp
 	pv := getValue(fmt.Sprintf("Vtpのしきい値電圧です(default : %.4f)\n", t.Simulation.Vtp.Voltage), fmt.Sprint(t.Simulation.Vtp.Voltage))
 	var pe error
@@ -116,6 +125,23 @@ func makeTask() {
 	//Signal
 	t.Simulation.Signal = getValue(fmt.Sprintf("プロットしたい信号線名です(default %s)\n", t.Simulation.Signal), t.Simulation.Signal)
 
+	return t
+}
+
+func makeTask() {
+	t := Task{
+		Simulation: config.Simulation,
+	}
+
+	if Sigma != 0.0 {
+		t.Simulation.Vtn.Sigma = Sigma
+		t.Simulation.Vtp.Sigma = Sigma
+	}
+
+	if !skip {
+		t = interactive(t)
+	}
+
 	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtp:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtp.Voltage, t.Simulation.Vtp.Sigma, t.Simulation.Vtp.Deviation)
 	fmt.Printf("Monte:%v\n", t.Simulation.Monte)
 	fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Simulation.Range, t.Simulation.DstDir, t.Simulation.SimDir)
@@ -172,4 +198,6 @@ func getValue(ask string, def string) string {
 
 func init() {
 	rootCmd.AddCommand(makeCmd)
+	makeCmd.PersistentFlags().Float64("sigma", 0.0, "Vtp,VtnのSigmaを設定します")
+	makeCmd.PersistentFlags().BoolP("default", "D", false, "設定ファイルをそのままタスクにします。オプションで値をしているとそちらが優先されます")
 }
