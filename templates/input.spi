@@ -5,7 +5,7 @@
 .option search='/home/takemura/Workspace/takemura'
 
 .option MCBRIEF=2
-.param vtn=AGAUSS(0.6,0.190,1.0) vtp=AGAUSS(-0.6,0.190,1.0)
+.param vtn=AGAUSS(%.4f,%.4f,%.4f) vtp=AGAUSS(%.4f,%.4f,%.4f)
 .option PARHIER = LOCAL
 .include '/home/takemura/Workspace/takemura/addfile.txt'
 .option ARTIST=2 PSF=2
@@ -50,7 +50,7 @@ v36 vdd! v3 dc=0 pulse ( 0.8 0 4.75n 0.5n 0.5n 9.5n 20n )
 
 
 
-.tran 10p 20n start=0 uic sweep monte=100 firstrun=1
+.tran 10p 20n start=0 uic sweep monte=%s firstrun=1
 .option opfile=1 split_dp=2
 
 

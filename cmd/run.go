@@ -74,16 +74,26 @@ func runTask(t Task) error {
 		cnt++
 
 		go func(cnt int) {
+			defer wg.Done()
 			// ファイルのコピー
 			//spi
-			spi := getSPIScript(t.Simulation, monte)
+			spi, re := getSPIScript(t.Simulation, monte)
+			if re != nil {
+				log.Println(re)
+				flag = true
+				return
+			}
 			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, "input.spi"), spi, 0644); err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				flag = true
+				return
 			}
 			//ace
 			ace := getACEScript(t.Simulation.Signal, t.Simulation.Range)
 			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, "extract.ace"), ace, 0644); err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				flag = true
+				return
 			}
 
 			dst := filepath.Join(t.Simulation.DstDir, monte)
@@ -98,7 +108,6 @@ func runTask(t Task) error {
 			//err := c.Run()
 			//flag = flag || (err != nil)
 			log.Print("Finished (", cnt, "/", size, ")")
-			wg.Done()
 
 		}(cnt)
 	}
@@ -123,45 +132,15 @@ sx_export_data  "store.csv" $www
 `, s, r.Start, r.Stop, r.Step))
 }
 
-func getSPIScript(s Simulation, monte string) []byte {
-	return []byte(fmt.Sprintf(`.option search='%s'
-.option MCBRIEF=2
-.param vtn=AGAUSS(%.4f,%.4f,%.4f) vtp=AGAUSS(%.4f,%.4f,%.4f)
-.option PARHIER = LOCAL
-.include '%s'
-.option ARTIST=2 PSF=2
-.temp 25
-.include '%s'
-*Custom Designer (TM) Version J-2014.12-SP2-2
-
-.GLOBAL gnd! vdd!
-m30 m8d m7d vdd! vdd! PCH w=90n l=0.045u ad='(90n*0.14u)' as='(90n*0.14u)' pd='(2*(90n+0.14u))'
-+  ps='(2*(90n+0.14u))'
-m9 m7d m8d vdd! vdd! PCH w=90n l=0.045u ad='(90n*0.14u)' as='(90n*0.14u)' pd='(2*(90n+0.14u))'
-+  ps='(2*(90n+0.14u))'
-m31 blb v3 vdd! vdd! PCH1 w=90n l=0.045u ad='(90n*0.14u)' as='(90n*0.14u)' pd='(2*(90n+0.14u))'
-+  ps='(2*(90n+0.14u))'
-m32 bl v3 vdd! vdd! PCH1 w=90n l=0.045u ad='(90n*0.14u)' as='(90n*0.14u)' pd='(2*(90n+0.14u))'
-+  ps='(2*(90n+0.14u))'
-m27 m8d v2 bl gnd! NCH w=60n l=0.045u ad='(60n*0.14u)' as='(60n*0.14u)' pd='(2*(60n+0.14u))'
-+  ps='(2*(60n+0.14u))'
-m26 m8d m7d gnd! gnd! NCH w=60n l=0.045u ad='(60n*0.14u)' as='(60n*0.14u)' pd='(2*(60n+0.14u))'
-+  ps='(2*(60n+0.14u))'
-m24 bl v1 gnd! gnd! NCH1 w=300n l=0.045u ad='(300n*0.14u)' as='(300n*0.14u)' pd='(2*(300n+0.14u))'
-+  ps='(2*(300n+0.14u))'
-m14 blb gnd! gnd! gnd! NCH1 w=300n l=0.045u ad='(300n*0.14u)' as='(300n*0.14u)'
-+ pd='(2*(300n+0.14u))' ps='(2*(300n+0.14u))'
-m13 m7d v2 blb gnd! NCH w=60n l=0.045u ad='(60n*0.14u)' as='(60n*0.14u)' pd='(2*(60n+0.14u))'
-+  ps='(2*(60n+0.14u))'
-m25 m7d m8d gnd! gnd! NCH w=60n l=0.045u ad='(60n*0.14u)' as='(60n*0.14u)' pd='(2*(60n+0.14u))'
-+  ps='(2*(60n+0.14u))'
-v18 vdd! v1 dc=0 pulse ( 0.8 0 4.75n 0.5n 0.5n 9.5n 20n )
-v35 vdd! v2 dc=0 pulse ( 0.8 0 4.75n 0.5n 0.5n 9.5n 20n )
-v36 vdd! v3 dc=0 pulse ( 0.8 0 4.75n 0.5n 0.5n 9.5n 20n )
-.tran 10p 20n start=0 uic sweep monte=%s firstrun=1
-.option opfile=1 split_dp=2
-.end`, s.LibDir, s.Vtn.Voltage, s.Vtn.Sigma, s.Vtn.Deviation, s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation,
-		s.AddFile, s.ModelFile, monte))
+func getSPIScript(s Simulation, monte string) ([]byte, error) {
+	p := filepath.Join(ConfigDir, "UHA", "spitemplate.txt")
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		return []byte{}, err
+	}
+	tmplt := string(b)
+	return []byte(fmt.Sprintf(tmplt, s.Vtn.Voltage, s.Vtn.Sigma, s.Vtn.Deviation,
+		s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation, monte)), nil
 }
 
 func readTask() (Task, string) {

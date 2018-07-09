@@ -107,16 +107,16 @@ func makeTask() {
 	t.Simulation.SimDir = getValue(fmt.Sprintf("netlistが置かれるべきディレクトリです(default %s)\n", t.Simulation.SimDir), t.Simulation.SimDir)
 
 	//LibDir
-	t.Simulation.LibDir = getValue(fmt.Sprintf("ライブラリのディレクトリです(default %s)\n", t.Simulation.LibDir), t.Simulation.LibDir)
+	//t.Simulation.LibDir = getValue(fmt.Sprintf("ライブラリのディレクトリです(default %s)\n", t.Simulation.LibDir), t.Simulation.LibDir)
 	//AddFile
-	t.Simulation.AddFile = getValue(fmt.Sprintf("addfileへのパスです(default %s)\n", t.Simulation.AddFile), t.Simulation.AddFile)
+	//t.Simulation.AddFile = getValue(fmt.Sprintf("addfileへのパスです(default %s)\n", t.Simulation.AddFile), t.Simulation.AddFile)
 	//ModelFile
-	t.Simulation.ModelFile = getValue(fmt.Sprintf("modelfileへのパスです(default %s)\n", t.Simulation.ModelFile), t.Simulation.ModelFile)
+	//t.Simulation.ModelFile = getValue(fmt.Sprintf("modelfileへのパスです(default %s)\n", t.Simulation.ModelFile), t.Simulation.ModelFile)
 
 	//Signal
 	t.Simulation.Signal = getValue(fmt.Sprintf("プロットしたい信号線名です(default %s)\n", t.Simulation.Signal), t.Simulation.Signal)
 
-	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtn:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation)
+	fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtp:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtp.Voltage, t.Simulation.Vtp.Sigma, t.Simulation.Vtp.Deviation)
 	fmt.Printf("Monte:%v\n", t.Simulation.Monte)
 	fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Simulation.Range, t.Simulation.DstDir, t.Simulation.SimDir)
 
@@ -137,13 +137,13 @@ func writeTask(t Task) error {
 	// ~ resolve
 	t.Simulation.DstDir, _ = homedir.Expand(t.Simulation.DstDir)
 	t.Simulation.SimDir, _ = homedir.Expand(t.Simulation.SimDir)
-	t.Simulation.AddFile, _ = homedir.Expand(t.Simulation.AddFile)
-	t.Simulation.LibDir, _ = homedir.Expand(t.Simulation.LibDir)
-	t.Simulation.ModelFile, _ = homedir.Expand(t.Simulation.ModelFile)
+	//t.Simulation.AddFile, _ = homedir.Expand(t.Simulation.AddFile)
+	//t.Simulation.LibDir, _ = homedir.Expand(t.Simulation.LibDir)
+	//t.Simulation.ModelFile, _ = homedir.Expand(t.Simulation.ModelFile)
 
 	j := path.Join(ReserveDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
-	b, err := json.Marshal(t)
+	b, err := json.MarshalIndent(t, "", "    ")
 	if err != nil {
 		return err
 	}
