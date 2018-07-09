@@ -134,7 +134,7 @@ func getACEScript(s string, r Range) []byte {
 }
 
 func getSPIScript(s Simulation, monte string) ([]byte, error) {
-	p := filepath.Join(ConfigDir, "UHA", "spitemplate.txt")
+	p := filepath.Join(ConfigDir, "spitemplate.txt")
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
 		return []byte{}, err
