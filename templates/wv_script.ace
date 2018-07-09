@@ -1,0 +1,6 @@
+set xml [ sx_open_wdf "resultsMap.xml" ]
+set www [ sx_find_wave_in_file $xml m8d ]
+sx_export_csv on
+sx_export_range 2.5ns 17.5ns 7.5ns
+sx_export_data  "" $www
+

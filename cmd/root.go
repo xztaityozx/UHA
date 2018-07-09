@@ -22,7 +22,10 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -31,16 +34,17 @@ import (
 
 var cfgFile string
 
+var config Config
+
+var DEF_MOTES = []string{"100", "200", "500", "1000", "2000", "5000", "10000", "20000", "50000"}
+
+var SelfPath string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "UHA",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "",
+	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -58,13 +62,25 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.UHA.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", path.Join(os.Getenv("HOME"), ".config", "UHA", ".UHA.json"), "config file ")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
+	viper.SetDefault("Simulation", Simulation{
+		Monte:  DEF_MOTES,
+		Range:  Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"},
+		SimDir: "",
+		DstDir: "",
+		//LibDir:    "",
+		//AddFile:   "",
+		//ModelFile: "",
+		Signal: "N2",
+		Vtn:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
+		Vtp:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
+	})
+	viper.SetDefault("Repositorys", []Repository{})
+	viper.SetDefault("TaskDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "task"))
+	viper.SetDefault("DoneDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "done"))
+	viper.SetDefault("SpreadSheet", SpreadSheet{})
+
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
@@ -92,4 +108,21 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+
+	if err := viper.Unmarshal(&config); err != nil {
+		log.Fatal(err)
+	}
+
+	//dir
+	TaskDir, _ := homedir.Expand(config.TaskDir)
+	ReserveDir = filepath.Join(TaskDir, RESERVE)
+	DoneDir = filepath.Join(TaskDir, DONE)
+	FailedDir = filepath.Join(TaskDir, FAILED)
+	home, _ := homedir.Dir()
+	ConfigDir = filepath.Join(home, ".config", "UHA")
+	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
+	tryMkdir(ReserveDir)
+	tryMkdir(DoneDir)
+	tryMkdir(FailedDir)
+
 }
