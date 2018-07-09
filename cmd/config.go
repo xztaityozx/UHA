@@ -32,16 +32,14 @@ type Task struct {
 	Simulation Simulation
 }
 
-type RepoType int
-
 const (
-	Git RepoType = iota
-	AWS RepoType = iota
-	Dir RepoType = iota
+	Git string = "Git"
+	AWS string = "AWS"
+	Dir string = "Dir"
 )
 
 type Repository struct {
-	Type RepoType
+	Type string
 	Path string
 }
 

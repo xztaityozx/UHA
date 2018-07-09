@@ -21,7 +21,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -36,9 +40,34 @@ var getCmd = &cobra.Command{
 	},
 }
 
-//func getFromDst() error {
-//files, err := ioutil.ReadDir()
-//}
+func getFromDst(src string) error {
+	files, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if f.Name()[0:5] != "Sigma" || !f.IsDir() {
+			continue
+		}
+
+		s := filepath.Join(src, f.Name())
+		if len(config.Repository) == 0 {
+			return errors.New("Could not find Repository")
+		}
+
+		if config.Repository[0].Type != Git && config.Repository[0].Type != Dir {
+			return errors.New("いまはGitかディレクトリしか操作できません")
+		}
+
+		t := filepath.Join(config.Repository[0].Path, f.Name())
+		if err := os.Rename(s, t); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func init() {
 	rootCmd.AddCommand(getCmd)
