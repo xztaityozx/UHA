@@ -96,8 +96,7 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".UHA" (without extension).
-		log.Println(home)
-		viper.AddConfigPath(ConfigDir)
+		viper.AddConfigPath(home)
 		viper.SetConfigName(".UHA")
 	}
 
@@ -117,7 +116,9 @@ func initConfig() {
 	ReserveDir = filepath.Join(TaskDir, RESERVE)
 	DoneDir = filepath.Join(TaskDir, DONE)
 	FailedDir = filepath.Join(TaskDir, FAILED)
-	ConfigDir = filepath.Join(hime, ".config", "UHA")
+	home, _ := homedir.Dir()
+	ConfigDir = filepath.Join(home, ".config", "UHA")
+	fmt.Print(ConfigDir)
 	tryMkdir(ReserveDir)
 	tryMkdir(DoneDir)
 	tryMkdir(FailedDir)
