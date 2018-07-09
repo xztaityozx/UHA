@@ -38,6 +38,8 @@ var config Config
 
 var DEF_MOTES = []string{"100", "200", "500", "1000", "2000", "5000", "10000", "20000", "50000"}
 
+var SelfPath string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "UHA",
@@ -118,6 +120,7 @@ func initConfig() {
 	FailedDir = filepath.Join(TaskDir, FAILED)
 	home, _ := homedir.Dir()
 	ConfigDir = filepath.Join(home, ".config", "UHA")
+	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 	fmt.Print(ConfigDir)
 	tryMkdir(ReserveDir)
 	tryMkdir(DoneDir)
