@@ -100,7 +100,7 @@ func runTask(t Task) error {
 			dst := filepath.Join(t.Simulation.DstDir, monte)
 			tryMkdir(dst)
 
-			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ./extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, "input.spi"), monte)
+			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, "input.spi"), monte)
 
 			fmt.Println(command)
 
@@ -134,7 +134,7 @@ func getACEScript(s string, r Range) []byte {
 }
 
 func getSPIScript(s Simulation, monte string) ([]byte, error) {
-	p := filepath.Join(ConfigDir, "spitemplate.txt")
+	p := filepath.Join(ConfigDir, "spitemplate.spi")
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
 		return []byte{}, err
