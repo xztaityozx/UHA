@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,13 @@ var getCmd = &cobra.Command{
 	},
 }
 
+func getFromDst() error {
+	files, err := ioutil.ReadDir()
+}
+
 func init() {
 	rootCmd.AddCommand(getCmd)
+	getCmd.PersistentFlags().BoolP("push", "P", false, "SpreadSheetにもデータを書き込みます")
+	getCmd.PersistentFlags().StringP("from", "f", config.Simulation.DstDir, fmt.Sprint("Sigmax.xxがあるフォルダです(default ", config.Simulation.DstDir, ")"))
+
 }

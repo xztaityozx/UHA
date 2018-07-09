@@ -70,7 +70,7 @@ func runTask(t Task) error {
 	cnt := 0
 	size := len(t.Simulation.Monte)
 
-	outDir := filepath.Join(t.Simulation.DstDir, "Sigma", fmt.Sprint(t.Simulation.Vtn.Sigma))
+	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Sigma%s", t.Simulation.Vtn.Sigma))
 	if err := tryMkdir(outDir); err != nil {
 		return err
 	}
@@ -226,8 +226,7 @@ func moveTo(f string, dir string) {
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.PersistentFlags().Int32P("number", "n", 1, "実行するシミュレーションセットの個数です")
-	runCmd.PersistentFlags().StringP("file", "f", "", "タスクファイルを指定します。一つしかできないです")
+	//runCmd.PersistentFlags().Int32P("number", "n", 1, "実行するシミュレーションセットの個数です")
+	//runCmd.PersistentFlags().StringP("file", "f", "", "タスクファイルを指定します。一つしかできないです")
 	//runCmd.PersistentFlags().Bool("fzf",false,"fzfを使ってファイルを選択します")
-
 }
