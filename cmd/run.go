@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -127,10 +128,10 @@ func runTask(t Task) error {
 
 			fmt.Println(command)
 
-			//c := exec.Command("bash", "-c", command)
+			c := exec.Command("bash", "-c", command)
 
-			//err := c.Run()
-			//flag = flag || (err != nil)
+			err := c.Run()
+			flag = flag || (err != nil)
 			log.Print("Finished (", cnt, "/", size, ")")
 
 		}(monte, cnt)
