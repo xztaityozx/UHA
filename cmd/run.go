@@ -110,7 +110,17 @@ func runTask(t Task) error {
 				return
 			}
 			//result
-			res, reserr := ioutil.ReadFile(filepath.Join(SelfPath, "templates", monte, ""))
+			res, reserr := ioutil.ReadFile(filepath.Join(SelfPath, "templates", monte))
+			if reserr != nil {
+				log.Println(reserr)
+				flag = true
+				return
+			}
+			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, monte, "result.xml")); err != nil {
+				log.Println(err)
+				flag = true
+				return
+			}
 
 			dst := filepath.Join(t.Simulation.DstDir, monte)
 			tryMkdir(dst)
