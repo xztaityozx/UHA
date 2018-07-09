@@ -37,13 +37,12 @@ type RepoType int
 const (
 	Git RepoType = iota
 	AWS RepoType = iota
+	Dir RepoType = iota
 )
 
 type Repository struct {
-	Type        RepoType
-	Path        string
-	DirPattern  string
-	FilePattern string
+	Type RepoType
+	Path string
 }
 
 type Node struct {
