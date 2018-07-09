@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -103,10 +104,10 @@ func runTask(t Task) error {
 
 			fmt.Println(command)
 
-			//c := exec.Command("bash", "-c", command)
+			c := exec.Command("bash", "-c", command)
 
-			//err := c.Run()
-			//flag = flag || (err != nil)
+			err := c.Run()
+			flag = flag || (err != nil)
 			log.Print("Finished (", cnt, "/", size, ")")
 
 		}(cnt)
@@ -125,11 +126,11 @@ func runTask(t Task) error {
 
 func getACEScript(s string, r Range) []byte {
 	return []byte(fmt.Sprintf(`set xml [ sx_open_wdf "resultsMap.xml" ]
-set www [ sx_find_wave_in_file $xml %s ]
-sx_export_csv on
-sx_export_range %s %s %s
-sx_export_data  "store.csv" $www
-`, s, r.Start, r.Stop, r.Step))
+	set www [ sx_find_wave_in_file $xml %s ]
+	sx_export_csv on
+	sx_export_range %s %s %s
+	sx_export_data  "store.csv" $www
+	`, s, r.Start, r.Stop, r.Step))
 }
 
 func getSPIScript(s Simulation, monte string) ([]byte, error) {
