@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/spf13/cobra"
 )
@@ -37,9 +36,9 @@ var getCmd = &cobra.Command{
 	},
 }
 
-func getFromDst() error {
-	files, err := ioutil.ReadDir()
-}
+//func getFromDst() error {
+//files, err := ioutil.ReadDir()
+//}
 
 func init() {
 	rootCmd.AddCommand(getCmd)
