@@ -116,7 +116,7 @@ func runTask(t Task) error {
 				flag = true
 				return
 			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, monte, "result.xml"), res, 0644); err != nil {
+			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, monte, "results.xml"), res, 0644); err != nil {
 				log.Println(err)
 				flag = true
 				return
