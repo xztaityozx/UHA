@@ -86,7 +86,7 @@ func runTask(t Task) error {
 				flag = true
 				return
 			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, "input.spi"), spi, 0644); err != nil {
+			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%sinput.spi", monte)), spi, 0644); err != nil {
 				log.Println(err)
 				flag = true
 				return
@@ -124,7 +124,7 @@ func runTask(t Task) error {
 				return
 			}
 
-			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, "input.spi"), monte)
+			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%sinput.spi", monte)), monte)
 
 			fmt.Println(command)
 
