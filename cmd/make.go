@@ -151,6 +151,7 @@ func writeTask(t Task) error {
 	if err := ioutil.WriteFile(j, b, 0644); err != nil {
 		return err
 	}
+	log.Println("Write Task to", j)
 	return nil
 }
 

@@ -121,7 +121,6 @@ func initConfig() {
 	home, _ := homedir.Dir()
 	ConfigDir = filepath.Join(home, ".config", "UHA")
 	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
-	fmt.Print(ConfigDir)
 	tryMkdir(ReserveDir)
 	tryMkdir(DoneDir)
 	tryMkdir(FailedDir)
