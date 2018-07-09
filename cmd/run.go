@@ -70,7 +70,7 @@ func runTask(t Task) error {
 	cnt := 0
 	size := len(t.Simulation.Monte)
 
-	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Sigma%s", t.Simulation.Vtn.Sigma))
+	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Sigma%.4f", t.Simulation.Vtn.Sigma))
 	if err := tryMkdir(outDir); err != nil {
 		return err
 	}
