@@ -27,7 +27,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -74,8 +73,10 @@ func runTask(t Task) error {
 		wg.Add(1)
 		cnt++
 
-		go func(cnt int) {
+		go func(monte string, cnt int) {
 			defer wg.Done()
+			dst := filepath.Join(t.Simulation.DstDir, monte)
+			tryMkdir(dst)
 			// ファイルのコピー
 			//spi
 			spi, re := getSPIScript(t.Simulation, monte)
@@ -122,20 +123,17 @@ func runTask(t Task) error {
 				return
 			}
 
-			dst := filepath.Join(t.Simulation.DstDir, monte)
-			tryMkdir(dst)
-
 			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, "input.spi"), monte)
 
 			fmt.Println(command)
 
-			c := exec.Command("bash", "-c", command)
+			//c := exec.Command("bash", "-c", command)
 
-			err := c.Run()
-			flag = flag || (err != nil)
+			//err := c.Run()
+			//flag = flag || (err != nil)
 			log.Print("Finished (", cnt, "/", size, ")")
 
-		}(cnt)
+		}(monte, cnt)
 	}
 	wg.Wait()
 
