@@ -22,9 +22,14 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/mattn/go-pipeline"
+	"github.com/spakin/awk"
 	"github.com/spf13/cobra"
 )
 
@@ -34,17 +39,72 @@ var countCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("count called")
+		Count()
 	},
 }
 
-func CountUp() []interface{} {
+func Count() {
+	rj := readPushData()
+	rj.Data = aggregate()
+	writePushData(rj)
+}
+
+func countup(p string) (int, error) {
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		return -1, err
+	}
+	s := awk.NewScript()
+	s.Begin = func(s *awk.Script) { s.State = 0 }
+	s.AppendStmt(
+		func(s *awk.Script) bool {
+			return s.F(0).Float64() >= 0.4 && s.F(3).Float64() >= 0.4
+		}, func(s *awk.Script) {
+			s.State = s.State.(int) + 1
+		})
+
+	r := strings.NewReader(string(b))
+	if err := s.Run(r); err != nil {
+		return -1, err
+	}
+
+	return s.State.(int), nil
+
+}
+
+func aggregate() []interface{} {
 	var rt []interface{}
 
 	wd, _ := os.Getwd()
 	if len(wd) < len("Sigmax.xxxx") {
-		log.Fatal()
+		log.Fatal("カレントディレクトリの命名ルールが違います")
 	}
+	wl := len(wd)
+	sigma := wd[wl-6 : wl-1]
+	log.Print("Open Sigma : ", sigma)
+
+	rt = append(rt, sigma)
+
+	// 数え上げ
+	b, err := pipeline.Output(
+		[]string{"ls", "-1", "*.csv"},
+		[]string{"sort", "-n"},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files := strings.Split(string(b), "\n")
+	for _, v := range files {
+		cnt, err := countup(filepath.Join(wd, v))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rt = append(rt, cnt)
+		fmt.Println(v, cnt)
+	}
+	return rt
 }
 
 func init() {

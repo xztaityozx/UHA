@@ -31,12 +31,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var getAndPush bool
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		getAndPush, _ = cmd.PersistentFlags().GetBool("push")
 		src, err := cmd.PersistentFlags().GetString("from")
 		if err != nil {
 			log.Fatal(err)
@@ -74,6 +77,20 @@ func getFromDst(src string) error {
 		if err := os.Rename(s, t); err != nil {
 			return err
 		}
+
+		if getAndPush {
+			wd, _ := os.Getwd()
+			if err := os.Chdir(t); err != nil {
+				log.Fatal(err)
+			}
+			rj := readPushData()
+			rj.Data = aggregate()
+			Push(rj)
+			if err := os.Chdir(wd); err != nil {
+				log.Fatal(err)
+			}
+		}
+
 	}
 
 	return nil
@@ -81,7 +98,7 @@ func getFromDst(src string) error {
 
 func init() {
 	rootCmd.AddCommand(getCmd)
-	getCmd.PersistentFlags().BoolP("push", "P", false, "SpreadSheetにもデータを書き込みます")
+	getCmd.PersistentFlags().BoolP("push", "P", false, "ついでにデータを数え上げ、SpreadSheetにデータを書き込みます")
 	getCmd.PersistentFlags().Bool("initSS", false, "SpreadSheetに書き込むための準備をします")
 	getCmd.PersistentFlags().StringP("from", "f", config.Simulation.DstDir, fmt.Sprint("Sigmax.xxがあるフォルダです(default ", config.Simulation.DstDir, ")"))
 

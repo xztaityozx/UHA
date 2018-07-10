@@ -42,11 +42,12 @@ var pushCmd = &cobra.Command{
 	Short: "pushするやつ",
 	Long:  `Spreadsheetsにpushするやつ`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Push()
+		rj := readPushData()
+		Push(rj)
 	},
 }
 
-func Push() {
+func Push(rj *PushData) {
 	spreadsheetId := config.SpreadSheet.Id
 	ctx := context.Background()
 	client := getClient(ctx, config.SpreadSheet.CSPath)
@@ -55,8 +56,6 @@ func Push() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	rj := readNextJson()
 
 	data := []*sheets.ValueRange{
 		{
@@ -80,8 +79,19 @@ func Push() {
 
 	fmt.Printf("%#v\n", res)
 
-	writeNextData(rj)
+	writeNewNextData(rj)
 
+}
+
+func writePushData(pd *PushData) {
+	j, err := json.Marshal(pd)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(NextPath, j, 0644); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
@@ -146,27 +156,27 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-type WriteData struct {
+type PushData struct {
 	Column string        `json:"Column"`
 	Data   []interface{} `json:"Data"`
 	Start  int           `json:"Start"`
 	End    int           `json:"End"`
 }
 
-func readNextJson() *WriteData {
+func readPushData() *PushData {
 	path := NextPath
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var writeData WriteData
+	var writeData PushData
 	if err := json.Unmarshal(b, &writeData); err != nil {
 		log.Fatal(err)
 	}
 	return &writeData
 }
 
-func writeNextData(rd *WriteData) {
+func writeNewNextData(rd *PushData) {
 	cur := rd.Column
 	var next string
 	st := rd.Start
@@ -179,7 +189,7 @@ func writeNextData(rd *WriteData) {
 	} else {
 		next = string([]byte(cur)[0] + 1)
 	}
-	wd := WriteData{
+	wd := PushData{
 		Column: next,
 		Data:   []interface{}{},
 		Start:  st,
@@ -195,4 +205,15 @@ func writeNextData(rd *WriteData) {
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
+	if _, err := os.Stat(config.SpreadSheet.CSPath); err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := os.Stat(config.SpreadSheet.TokenPath); err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := os.Stat(NextPath); err != nil {
+		log.Fatal(err)
+	}
 }
