@@ -48,12 +48,22 @@ var runCmd = &cobra.Command{
 	Short: "シミュレーションを実行します",
 	Long:  `シミュレーションセットを実行します`,
 	Run: func(cmd *cobra.Command, args []string) {
-		t, f := readTask()
-		if err := runTask(t); err != nil {
-			moveTo(f, FailedDir)
-			log.Fatal(err)
-		} else {
-			moveTo(f, DoneDir)
+		count, _ := cmd.PersistentFlags().GetInt("number")
+		conti, _ := cmd.PersistentFlags().GetBool("continue")
+		for i := 0; i < count; i++ {
+			t, f, err := readTask()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := runTask(t); err != nil {
+				moveTo(f, FailedDir)
+				if !conti {
+					log.Fatal(err)
+				}
+			} else {
+				moveTo(f, DoneDir)
+				log.Println("Finished ", f)
+			}
 		}
 	},
 }
@@ -173,13 +183,17 @@ func getSPIScript(s Simulation, monte string) ([]byte, error) {
 		s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation, monte)), nil
 }
 
-func readTask() (Task, string) {
+func readTask() (Task, string, error) {
 	p := config.TaskDir
 
 	// リスト取得
 	files, err := ioutil.ReadDir(filepath.Join(p, RESERVE))
 	if err != nil {
-		log.Fatal(err)
+		return Task{}, "", err
+	}
+
+	if len(files) == 0 {
+		return Task{}, "", errors.New("タスクがありません")
 	}
 
 	f := filepath.Join(p, RESERVE, files[0].Name())
@@ -187,7 +201,7 @@ func readTask() (Task, string) {
 	//実行と移動
 	b, err := ioutil.ReadFile(f)
 	if err != nil {
-		log.Fatal(err)
+		return Task{}, "", err
 	}
 
 	var task Task
@@ -195,10 +209,10 @@ func readTask() (Task, string) {
 
 	if err != nil {
 		moveTo(files[0].Name(), FAILED)
-		log.Fatal(err)
+		return Task{}, "", err
 	}
 
-	return task, files[0].Name()
+	return task, files[0].Name(), nil
 }
 
 func tryMkdir(p string) error {
@@ -226,7 +240,8 @@ func moveTo(f string, dir string) {
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	//runCmd.PersistentFlags().Int32P("number", "n", 1, "実行するシミュレーションセットの個数です")
+	runCmd.PersistentFlags().IntP("number", "n", 1, "実行するシミュレーションセットの個数です")
+	runCmd.PersistentFlags().BoolP("continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
 	//runCmd.PersistentFlags().StringP("file", "f", "", "タスクファイルを指定します。一つしかできないです")
 	//runCmd.PersistentFlags().Bool("fzf",false,"fzfを使ってファイルを選択します")
 }
