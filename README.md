@@ -37,10 +37,10 @@ UHA [--config FILE|-h,--help]  [command] OPTIONS
 UHA [--config FILE] make [flags]
 ```
 
-Flags:
-  -D, --default       設定ファイルをそのままタスクにします。オプションで値をしているとそちらが優先されます
-  -h, --help          help for make
-      --sigma float   Vtp,VtnのSigmaを設定します
+Flags:  
+  -D, --default       設定ファイルをそのままタスクにします。オプションで値をしているとそちらが優先されます  
+  -h, --help          help for make  
+      --sigma float   Vtp,VtnのSigmaを設定します  
 
 #### run
 makeで作ったシミュレーションセットを実行します。
@@ -48,10 +48,10 @@ makeで作ったシミュレーションセットを実行します。
 ```sh
 UHA [--config FILE] run [flags]
 ```
-Flags:
-  -C, --continue     連続して実行する時、どれかがコケても次のシミュレーションを行います
-  -h, --help         help for run
-  -n, --number int   実行するシミュレーションセットの個数です (default 1)
+Flags:  
+  -C, --continue     連続して実行する時、どれかがコケても次のシミュレーションを行います  
+  -h, --help         help for run  
+  -n, --number int   実行するシミュレーションセットの個数です (default 1)  
 
 
 ## Configuration
@@ -87,7 +87,7 @@ UHAを快適に使うには設定が必要です。設定ファイルは`.UHA.js
   "Repository":[
     {
       "Path":"",
-      "Type",
+      "Type":"",
     }
   ],
   "SpreadSheet":{
@@ -149,6 +149,7 @@ Google SpreadSheetのAPIを使って結果を書き込むことが出来ます�
 次に`spitemplate.spi`の以下の行を編集します。
 
 |行|変更前|変更後|
+|:--:|:--:|:--:|
 |だいたい8行目|.param vtn=AGAUSS(xx,yy,zz) vtp=AGAUSS(xx,yy,zz)|.param vtn=AGAUSS( __%.4f,%.4f,%.4f__ ) vtp=AGAUSS( __%.4f,%.4f,%.4f__ )|
 |だいたい53行目|.tran 10p 20n start=0 uic sweep monte=xxx firstrun=1|.tran 10p 20n start=0 uic sweep __monte=%s__ firstrun=1|
 
