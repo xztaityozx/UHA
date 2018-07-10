@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -36,7 +37,13 @@ var getCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("get called")
+		src, err := cmd.PersistentFlags().GetString("from")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := getFromDst(src); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
@@ -47,6 +54,9 @@ func getFromDst(src string) error {
 	}
 
 	for _, f := range files {
+		if len(f.Name()) <= 5 {
+			continue
+		}
 		if f.Name()[0:5] != "Sigma" || !f.IsDir() {
 			continue
 		}
@@ -72,6 +82,7 @@ func getFromDst(src string) error {
 func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.PersistentFlags().BoolP("push", "P", false, "SpreadSheetにもデータを書き込みます")
+	getCmd.PersistentFlags().Bool("initSS", false, "SpreadSheetに書き込むための準備をします")
 	getCmd.PersistentFlags().StringP("from", "f", config.Simulation.DstDir, fmt.Sprint("Sigmax.xxがあるフォルダです(default ", config.Simulation.DstDir, ")"))
 
 }
