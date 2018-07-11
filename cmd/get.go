@@ -24,19 +24,33 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
+var getAndPush bool
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "",
-	Long:  ``,
+	Short: "Sigmax.xxxというディレクトリを収集します",
+	Long: `DstDirにできたSigmax.xxxというディレクトリを収集します。
+
+Usage:
+	UHA get [--push,-P|--from,-f [DIRECTORY]
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("get called")
+		getAndPush, _ = cmd.PersistentFlags().GetBool("push")
+		src, err := cmd.PersistentFlags().GetString("from")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := getFromDst(src); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
@@ -47,6 +61,9 @@ func getFromDst(src string) error {
 	}
 
 	for _, f := range files {
+		if len(f.Name()) <= 5 {
+			continue
+		}
 		if f.Name()[0:5] != "Sigma" || !f.IsDir() {
 			continue
 		}
@@ -64,6 +81,20 @@ func getFromDst(src string) error {
 		if err := os.Rename(s, t); err != nil {
 			return err
 		}
+
+		if getAndPush {
+			wd, _ := os.Getwd()
+			if err := os.Chdir(t); err != nil {
+				log.Fatal(err)
+			}
+			rj := readPushData()
+			rj.Data = aggregate()
+			Push(rj)
+			if err := os.Chdir(wd); err != nil {
+				log.Fatal(err)
+			}
+		}
+
 	}
 
 	return nil
@@ -71,7 +102,7 @@ func getFromDst(src string) error {
 
 func init() {
 	rootCmd.AddCommand(getCmd)
-	getCmd.PersistentFlags().BoolP("push", "P", false, "SpreadSheetにもデータを書き込みます")
+	getCmd.PersistentFlags().BoolP("push", "P", false, "ついでにデータを数え上げ、SpreadSheetにデータを書き込みます")
 	getCmd.PersistentFlags().StringP("from", "f", config.Simulation.DstDir, fmt.Sprint("Sigmax.xxがあるフォルダです(default ", config.Simulation.DstDir, ")"))
 
 }
