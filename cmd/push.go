@@ -42,6 +42,17 @@ var pushCmd = &cobra.Command{
 	Short: "pushするやつ",
 	Long:  `Spreadsheetsにpushするやつ`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if _, err := os.Stat(config.SpreadSheet.CSPath); err != nil {
+			log.Fatal(err)
+		}
+
+		if _, err := os.Stat(config.SpreadSheet.TokenPath); err != nil {
+			log.Fatal(err)
+		}
+
+		if _, err := os.Stat(NextPath); err != nil {
+			log.Fatal(err)
+		}
 		rj := readPushData()
 		Push(rj)
 	},
@@ -205,15 +216,4 @@ func writeNewNextData(rd *PushData) {
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
-	if _, err := os.Stat(config.SpreadSheet.CSPath); err != nil {
-		log.Fatal(err)
-	}
-
-	if _, err := os.Stat(config.SpreadSheet.TokenPath); err != nil {
-		log.Fatal(err)
-	}
-
-	if _, err := os.Stat(NextPath); err != nil {
-		log.Fatal(err)
-	}
 }
