@@ -36,8 +36,12 @@ var getAndPush bool
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "",
-	Long:  ``,
+	Short: "Sigmax.xxxというディレクトリを収集します",
+	Long: `DstDirにできたSigmax.xxxというディレクトリを収集します。
+
+Usage:
+	UHA get [--push,-P|--from,-f [DIRECTORY]
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		getAndPush, _ = cmd.PersistentFlags().GetBool("push")
 		src, err := cmd.PersistentFlags().GetString("from")
@@ -99,7 +103,6 @@ func getFromDst(src string) error {
 func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.PersistentFlags().BoolP("push", "P", false, "ついでにデータを数え上げ、SpreadSheetにデータを書き込みます")
-	getCmd.PersistentFlags().Bool("initSS", false, "SpreadSheetに書き込むための準備をします")
 	getCmd.PersistentFlags().StringP("from", "f", config.Simulation.DstDir, fmt.Sprint("Sigmax.xxがあるフォルダです(default ", config.Simulation.DstDir, ")"))
 
 }

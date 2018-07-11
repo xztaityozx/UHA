@@ -39,8 +39,11 @@ import (
 // pushCmd represents the push command
 var pushCmd = &cobra.Command{
 	Use:   "push",
-	Short: "pushするやつ",
-	Long:  `Spreadsheetsにpushするやつ`,
+	Short: "pushします",
+	Long: `Spreadsheetsにpushします。SpreadSheetの情報をコンフィグに書いておく必要があります	
+Usage:
+	UHA push
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(config.SpreadSheet.CSPath); err != nil {
 			log.Fatal(err)

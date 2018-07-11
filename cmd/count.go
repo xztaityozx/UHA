@@ -36,8 +36,11 @@ import (
 // countCmd represents the count command
 var countCmd = &cobra.Command{
 	Use:   "count",
-	Short: "",
-	Long:  ``,
+	Short: "データを数え上げます",
+	Long: `現在のディレクトリにあるCSVを見つけて、不良数を数え上げます
+Usage:
+	UHA count
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		Count()
 	},
