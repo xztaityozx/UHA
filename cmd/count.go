@@ -90,7 +90,8 @@ func aggregate() []interface{} {
 
 	// 数え上げ
 	b, err := pipeline.Output(
-		[]string{"ls", "-1", "*.csv"},
+		[]string{"ls", "-1"},
+		[]string{"grep", ".csv"},
 		[]string{"sort", "-n"},
 	)
 	if err != nil {
@@ -99,6 +100,9 @@ func aggregate() []interface{} {
 
 	files := strings.Split(string(b), "\n")
 	for _, v := range files {
+		if len(v) == 0 {
+			continue
+		}
 		cnt, err := countup(filepath.Join(wd, v))
 		if err != nil {
 			log.Fatal(err)
