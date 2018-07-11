@@ -11,6 +11,7 @@ var ConfigDir string
 var ReserveDir string
 var DoneDir string
 var FailedDir string
+var NextPath string
 
 type Simulation struct {
 	Monte  []string
