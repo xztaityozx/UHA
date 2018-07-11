@@ -44,10 +44,9 @@ var countCmd = &cobra.Command{
 }
 
 func Count() {
-	//rj := readPushData()
-	//rj.Data = aggregate()
-	//writePushData(rj)
-	aggregate()
+	rj := readPushData()
+	rj.Data = aggregate()
+	writePushData(rj)
 }
 
 func countup(p string) (int, error) {
