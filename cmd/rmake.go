@@ -31,8 +31,13 @@ import (
 // rmakeCmd represents the rmake command
 var rmakeCmd = &cobra.Command{
 	Use:   "rmake",
-	Short: "",
-	Long:  ``,
+	Short: "sigmaの範囲を指定してタスクを連続生成",
+	Long: `sigmaの範囲を指定してタスクを連続生成します。
+	
+Usage:
+	UHA rmake start step stop
+	
+これ以外の値はデフォルト値が使われます`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 3 {
 			return errors.New("requires at less 3 args [start,step,stop]")
