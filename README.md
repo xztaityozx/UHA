@@ -53,7 +53,6 @@ Flags:
   -h, --help         help for run  
   -n, --number int   実行するシミュレーションセットの個数です (default 1)  
 
-
 ## Configuration
 UHAを快適に使うには設定が必要です。設定ファイルは`.UHA.json`で、通常`~/.config/UHA/`以下に置かれており、これがデフォルトの設定として扱われます。
 
