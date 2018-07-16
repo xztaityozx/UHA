@@ -22,9 +22,12 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
+	"github.com/mattn/go-pipeline"
 	"github.com/spf13/cobra"
 )
 
@@ -45,8 +48,17 @@ Usage:
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		var start, stop, step float64
 		var err error
+		var num bool
+		num, err = cmd.PersistentFlags().GetBool("number")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var steps []string
+		var start float64
+		var step float64
+
 		start, err = strconv.ParseFloat(args[0], 64)
 		if err != nil {
 			log.Fatal(err)
@@ -55,23 +67,63 @@ Usage:
 		if err != nil {
 			log.Fatal(err)
 		}
-		stop, err = strconv.ParseFloat(args[2], 64)
-		if err != nil {
+
+		if num {
+			cnt, err := strconv.ParseInt(args[2], 10, 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			steps = makeStepN(start, step, cnt)
+		} else {
+			stop, err := strconv.ParseFloat(args[2], 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			steps = makeStep(start, step, stop)
+		}
+
+		if err := rmakeTask(steps); err != nil {
 			log.Fatal(err)
 		}
-		if err := rmakeTask(start, step, stop); err != nil {
-			log.Fatal(err)
-		}
+
 	},
 }
 
-func rmakeTask(start float64, step float64, stop float64) error {
-	for ; start <= stop; start += step {
+func makeStepN(start float64, step float64, n int64) []string {
+	b, err := pipeline.Output(
+		[]string{"seq", fmt.Sprint(start), fmt.Sprint(step), fmt.Sprint(1)},
+		[]string{"head", "-n", fmt.Sprint(n)},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return strings.Split(string(b), "\n")
+}
+
+func makeStep(start float64, step float64, stop float64) []string {
+	b, err := pipeline.Output(
+		[]string{"seq", fmt.Sprint(start), fmt.Sprint(step), fmt.Sprint(stop)},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return strings.Split(string(b), "\n")
+}
+
+func rmakeTask(list []string) error {
+	for _, v := range list {
+		if len(v) == 0 {
+			continue
+		}
+		sigma, _ := strconv.ParseFloat(v, 64)
 		t := Task{
 			Simulation: config.Simulation,
 		}
-		t.Simulation.Vtn.Sigma = start
-		t.Simulation.Vtp.Sigma = start
+
+		t.Simulation.Vtn.Sigma = sigma
+		t.Simulation.Vtp.Sigma = sigma
 
 		if err := writeTask(t); err != nil {
 			return err
@@ -82,4 +134,5 @@ func rmakeTask(start float64, step float64, stop float64) error {
 
 func init() {
 	rootCmd.AddCommand(rmakeCmd)
+	rmakeCmd.PersistentFlags().BoolP("number", "n", false, "始点、刻み幅、回数を指定して生成します")
 }
