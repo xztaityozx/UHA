@@ -215,6 +215,64 @@ func readTask() (Task, string, error) {
 	return task, files[0].Name(), nil
 }
 
+type Pair struct {
+	Task Task
+	Path string
+}
+
+func readAllTask() []Pair {
+	p := config.TaskDir
+
+	files, err := ioutil.ReadDir(filepath.Join(p, RESERVE))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var rt []Pair
+
+	for _, v := range files {
+		f := filepath.Join(p, RESERVE, v.Name())
+		b, err := ioutil.ReadFile(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var t Task
+		if err := json.Unmarshal(b, &t); err != nil {
+			log.Fatal(err)
+		}
+
+		if err != nil {
+			moveTo(v.Name(), FAILED)
+			log.Println("不正確なtaskファイルでした : ", v.Name())
+		}
+
+		rt = append(rt, Pair{Path: v.Name(), Task: t})
+	}
+
+	return rt
+}
+
+func runAllTask(conti bool) error {
+	tasks := readAllTask()
+
+	for _, v := range tasks {
+		t := v.Task
+		p := v.Path
+
+		if err := runTask(t); err != nil {
+			moveTo(p, FAILED)
+			if !conti {
+				return errors.New("失敗したの終了します")
+			}
+		} else {
+			moveTo(p, DONE)
+			log.Println("Finished ", p)
+		}
+	}
+	return nil
+}
+
 func tryMkdir(p string) error {
 	if _, err := os.Stat(p); err != nil {
 		if e := os.MkdirAll(p, 0755); e != nil {
@@ -242,6 +300,7 @@ func init() {
 
 	runCmd.PersistentFlags().IntP("number", "n", 1, "実行するシミュレーションセットの個数です")
 	runCmd.PersistentFlags().BoolP("continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
+	runCmd.PersistentFlags().Bool("all", false, "全部実行します")
 	//runCmd.PersistentFlags().StringP("file", "f", "", "タスクファイルを指定します。一つしかできないです")
 	//runCmd.PersistentFlags().Bool("fzf",false,"fzfを使ってファイルを選択します")
 }
