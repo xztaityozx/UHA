@@ -115,15 +115,22 @@ func initConfig() {
 
 	//dir
 	TaskDir, _ := homedir.Expand(config.TaskDir)
-	ReserveDir = filepath.Join(TaskDir, RESERVE)
-	DoneDir = filepath.Join(TaskDir, DONE)
-	FailedDir = filepath.Join(TaskDir, FAILED)
+	ReserveRunDir = filepath.Join(TaskDir, RUN, RESERVE)
+	DoneRunDir = filepath.Join(TaskDir, RUN, DONE)
+	FailedRunDir = filepath.Join(TaskDir, RUN, FAILED)
+	ReserveSRunDir = filepath.Join(TaskDir, SRUN, RESERVE)
+	DoneSRunDir = filepath.Join(TaskDir, SRUN, DONE)
+	FailedSRunDir = filepath.Join(TaskDir, SRUN, FAILED)
+
 	home, _ := homedir.Dir()
 	ConfigDir = filepath.Join(home, ".config", "UHA")
 	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 	NextPath = filepath.Join(ConfigDir, "next.json")
-	tryMkdir(ReserveDir)
-	tryMkdir(DoneDir)
-	tryMkdir(FailedDir)
+	tryMkdir(ReserveRunDir)
+	tryMkdir(DoneRunDir)
+	tryMkdir(FailedRunDir)
+	tryMkdir(ReserveSRunDir)
+	tryMkdir(DoneSRunDir)
+	tryMkdir(FailedSRunDir)
 
 }
