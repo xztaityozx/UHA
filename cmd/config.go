@@ -8,9 +8,12 @@ type Config struct {
 }
 
 var ConfigDir string
-var ReserveDir string
-var DoneDir string
-var FailedDir string
+var ReserveRunDir string
+var DoneRunDir string
+var FailedRunDir string
+var ReserveSRunDir string
+var DoneSRunDir string
+var FailedSRunDir string
 var NextPath string
 
 type Simulation struct {

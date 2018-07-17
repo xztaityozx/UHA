@@ -40,6 +40,8 @@ const (
 	RESERVE string = "reserve"
 	DONE    string = "done"
 	FAILED  string = "failed"
+	SRUN    string = "srun"
+	RUN     string = "run"
 )
 
 // runCmd represents the run command
@@ -56,12 +58,12 @@ var runCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			if err := runTask(t); err != nil {
-				moveTo(f, FailedDir)
+				moveTo(f, FailedRunDir)
 				if !conti {
 					log.Fatal(err)
 				}
 			} else {
-				moveTo(f, DoneDir)
+				moveTo(f, DoneRunDir)
 				log.Println("Finished ", f)
 			}
 		}
@@ -184,10 +186,10 @@ func getSPIScript(s Simulation, monte string) ([]byte, error) {
 }
 
 func readTask() (Task, string, error) {
-	p := config.TaskDir
+	//p := config.TaskDir
 
 	// リスト取得
-	files, err := ioutil.ReadDir(filepath.Join(p, RESERVE))
+	files, err := ioutil.ReadDir(ReserveRunDir)
 	if err != nil {
 		return Task{}, "", err
 	}
@@ -196,7 +198,7 @@ func readTask() (Task, string, error) {
 		return Task{}, "", errors.New("タスクがありません")
 	}
 
-	f := filepath.Join(p, RESERVE, files[0].Name())
+	f := filepath.Join(ReserveRunDir, files[0].Name())
 
 	//実行と移動
 	b, err := ioutil.ReadFile(f)
@@ -221,9 +223,9 @@ type Pair struct {
 }
 
 func readAllTask() []Pair {
-	p := config.TaskDir
+	//p := config.TaskDir
 
-	files, err := ioutil.ReadDir(filepath.Join(p, RESERVE))
+	files, err := ioutil.ReadDir(ReserveRunDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -231,7 +233,7 @@ func readAllTask() []Pair {
 	var rt []Pair
 
 	for _, v := range files {
-		f := filepath.Join(p, RESERVE, v.Name())
+		f := filepath.Join(ReserveRunDir, v.Name())
 		b, err := ioutil.ReadFile(f)
 		if err != nil {
 			log.Fatal(err)
@@ -261,12 +263,12 @@ func runAllTask(conti bool) error {
 		p := v.Path
 
 		if err := runTask(t); err != nil {
-			moveTo(p, FAILED)
+			moveTo(p, FailedRunDir)
 			if !conti {
 				return errors.New("失敗したの終了します")
 			}
 		} else {
-			moveTo(p, DONE)
+			moveTo(p, DoneRunDir)
 			log.Println("Finished ", p)
 		}
 	}
@@ -284,7 +286,7 @@ func tryMkdir(p string) error {
 }
 
 func moveTo(f string, dir string) {
-	src := filepath.Join(ReserveDir, f)
+	src := filepath.Join(ReserveRunDir, f)
 
 	dst := filepath.Join(dir, f)
 

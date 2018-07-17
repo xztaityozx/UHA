@@ -167,7 +167,7 @@ func makeTask() {
 }
 
 func writeTask(t Task) error {
-	tryMkdir(ReserveDir)
+	tryMkdir(ReserveRunDir)
 
 	// ~ resolve
 	t.Simulation.DstDir, _ = homedir.Expand(t.Simulation.DstDir)
@@ -176,7 +176,7 @@ func writeTask(t Task) error {
 	//t.Simulation.LibDir, _ = homedir.Expand(t.Simulation.LibDir)
 	//t.Simulation.ModelFile, _ = homedir.Expand(t.Simulation.ModelFile)
 
-	j := path.Join(ReserveDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
+	j := path.Join(ReserveRunDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
 	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
 	b, err := json.MarshalIndent(t, "", "    ")
 	if err != nil {
