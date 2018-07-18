@@ -55,7 +55,7 @@ func readNSTaskFileList() []NSeedTask {
 			log.Fatal(rerr)
 		}
 		var nt NSeedTask
-		j, jerr := json.Unmarshal(b, &nt)
+		jerr := json.Unmarshal(b, &nt)
 		if jerr != nil {
 			log.Println(jerr)
 		}
@@ -68,17 +68,58 @@ func readNSTaskFileList() []NSeedTask {
 
 func setResultDir(nt NSeedTask) error {
 	for i := 1; i <= nt.Count; i++ {
-		p := filepath.Join()
+		p := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
+		if err := tryMkdir(p); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func makeSRunCommand(nt NSeedTask) []string {
+func makeSRun(nt NSeedTask) []string {
 	var rt []string
+
+	// ディレクトリを作る
+	if err := setResultDir(nt); err != nil {
+		log.Fatal(err)
+	}
+
+	for i := 1; i <= nt.Count; i++ {
+		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
+		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
+		addfile := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("addfile%d.txt", i))
+
+		// Addfileを作る
+		if err := setAddfileTo(i, addfile); err != nil {
+			log.Fatal(err)
+		}
+		// SPIをつくる
+		if err := setSEEDInputSPI(i, addfile, nt.Simulation); err != nil {
+			log.Fatal(err)
+		}
+
+		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log  && wv -k -ace_no_gui ../extract.ace &> wv.log && ", dst, input)
+		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", nt.Simulation.Vtn.Sigma)
+
+		rt = append(rt, str)
+	}
+
+	return rt
+}
+
+func setSEEDInputSPI(cnt int, p string, sim Simulation) error {
+	spi, err := getSPIScript(sim, sim.Monte[0], fmt.Sprintf("addfile%d.txt", cnt))
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(p, spi, 0644)
 }
 
 func setAddfileTo(cnt int, p string) error {
 	for i := 1; i <= cnt; i++ {
-		b, err := []byte(makeSAddfile(i))
+		s, err := makeSAddfile(i)
+		b := []byte(s)
 		if err != nil {
 			return err
 		}
