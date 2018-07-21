@@ -112,21 +112,8 @@ func TestReadNSeedTaskList(t *testing.T) {
 
 		actual := readNSTaskFileList()
 
-		if len(actual) != 2 {
+		if len(actual) != 1 {
 			t.Fatal("Unexpected result : len(actual) : ", len(actual))
-		}
-	})
-
-	t.Run("2", func(t *testing.T) {
-		f := filepath.Join(p, "task2.json")
-		if err := ioutil.WriteFile(f, b, 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		actual := readNSTaskFileList()
-
-		if len(actual) != 2 {
-			t.Fatal("Unexpected result : len(actual")
 		}
 	})
 
