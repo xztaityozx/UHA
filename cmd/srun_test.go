@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
+var home string = os.Getenv("HOME")
+
 var sim Simulation = Simulation{
-	DstDir: "/home/xztaityozx/WorkSpace/Test/",
-	SimDir: "/home/xztaityozx/WorkSpace/Test/",
+	DstDir: filepath.Join(home, "WorkSpace", "Test"),
+	SimDir: filepath.Join(home, "WorkSpace", "Test"),
 	Monte:  []string{"50000"},
 	Range:  Range{Start: "0.0", Step: "1.0", Stop: "2.0"},
 	Signal: "n1",
@@ -27,9 +30,9 @@ var sim Simulation = Simulation{
 
 func TestSetSEEDInputSPI(t *testing.T) {
 
-	ConfigDir = "/home/xztaityozx/.config/UHA"
+	ConfigDir = filepath.Join(home, ".config", "UHA")
 
-	p := filepath.Join(sim.SimDir, "50000_SEED1_input.spi")
+	p := sim.SimDir
 
 	if err := setSEEDInputSPI(1, p, sim); err != nil {
 		t.Fatal(err)
@@ -44,7 +47,9 @@ func TestSetSEEDInputSPI(t *testing.T) {
 		t.Fatal("Unexpected result : file name : ", f[0].Name())
 	}
 
-	os.Remove(p)
+	if err := os.Remove(filepath.Join(p, f[0].Name())); err != nil {
+		t.Fatal(err)
+	}
 }
 
 var nt NSeedTask = NSeedTask{
@@ -72,6 +77,26 @@ func TestSetResultDir(t *testing.T) {
 }
 
 func TestMakeSRun(t *testing.T) {
-	expect := "cd /home/xztaityozx/WorkSpace/Test"
+
 	actual := makeSRun(nt)
+	for i := 1; i <= nt.Count; i++ {
+
+		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
+		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
+		expect := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", dst, input, nt.Simulation.Vtn.Sigma)
+
+		if expect != actual[i-1] {
+			t.Fatal("Unexpected result : index = ", i, " : ", actual[i-1], "\nexpect : ", expect)
+		}
+	}
+}
+
+func TestZZZ(t *testing.T) {
+	f, _ := ioutil.ReadDir(nt.Simulation.DstDir)
+
+	for _, v := range f {
+		if err := os.Remove(filepath.Join(nt.Simulation.DstDir, v.Name())); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
