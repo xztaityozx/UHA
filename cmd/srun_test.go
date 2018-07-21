@@ -99,6 +99,7 @@ func TestReadNSeedTaskList(t *testing.T) {
 	p := filepath.Join(taskDir, "srun", RESERVE)
 
 	ReserveSRunDir = p
+	tryMkdir(ReserveSRunDir)
 
 	t.Run("1", func(t *testing.T) {
 		f := filepath.Join(p, "task1.json")
