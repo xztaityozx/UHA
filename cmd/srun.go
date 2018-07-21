@@ -37,8 +37,14 @@ import (
 // srunCmd represents the srun command
 var srunCmd = &cobra.Command{
 	Use:   "srun",
-	Short: "",
-	Long:  ``,
+	Short: "smakeで作ったタスクを実行します",
+	Long: `SEEDを連番生成しながら複数回モンテカルロを実行します
+	
+Usage:
+	UHA srun [--number,-n [NUM]|--parallel,-P [NUM]|--all|--custom [commands]|--continue,-C]
+
+	先に"UHA smake"でタスクを作ってから実行してください
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		conti, _ := cmd.PersistentFlags().GetBool("continue")
 		prlel, _ := cmd.PersistentFlags().GetInt("parallel")
