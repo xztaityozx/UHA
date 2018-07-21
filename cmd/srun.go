@@ -25,8 +25,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os/exec"
 	"path/filepath"
+	"sync"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -36,8 +40,77 @@ var srunCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("srun called")
+		conti, _ := cmd.PersistentFlags().GetBool("continue")
+		prlel, _ := cmd.PersistentFlags().GetInt("parallel")
+		all, _ := cmd.PersistentFlags().GetBool("all")
+		custom, _ := cmd.PersistentFlags().GetStringSlice("custom")
+		num, _ := cmd.PersistentFlags().GetInt("number")
+
+		// task list
+		list := readNSTaskFileList()
+		if len(list) == 0 && len(custom) == 0 {
+			log.Fatal("タスクが見つかりませんでした")
+		}
+
+		if !all {
+			list = list[0:num]
+		}
+
+		srun(prlel, conti, list, custom)
+
 	},
+}
+
+// prlel個並列にタスクを実行する。
+func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
+	var commands []string
+
+	if len(Custom) == 0 {
+		for _, v := range tasks {
+			res := makeSRun(v)
+			commands = append(commands, res...)
+		}
+	} else {
+		commands = Custom
+	}
+
+	log.Println(commands)
+
+	log.Println("Start Simulation Set :Range=", len(commands))
+
+	// WaitGroup
+	var wg sync.WaitGroup
+	limit := make(chan struct{}, prlel)
+	count := 0
+
+	// スピナー
+	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
+	s.Suffix = "Running... "
+	s.FinalMSG = "Finished!"
+	s.Start()
+
+	for _, command := range commands {
+		wg.Add(1)
+		count++
+
+		log.Println(command)
+
+		go func(command string, cnt int) {
+			limit <- struct{}{}
+			defer wg.Done()
+
+			if err := exec.Command("bash", "-c", command).Run(); err != nil {
+				if !conti {
+					log.Fatal(err)
+				}
+			} else {
+				log.Printf("Finished (%d/%d)\n", cnt, len(commands))
+			}
+			<-limit
+		}(command, count)
+	}
+	wg.Wait()
+	s.Stop()
 }
 
 // ReserveSRunDirから、NSeedTaskのJSONとして正しいやつだけ列挙
@@ -152,4 +225,8 @@ func makeSAddfile(seed int) (string, error) {
 func init() {
 	rootCmd.AddCommand(srunCmd)
 	srunCmd.PersistentFlags().Bool("all", false, "すべて実行します")
+	srunCmd.PersistentFlags().BoolP("continue", "C", false, "どこかでシミュレーションが失敗しても続けます")
+	srunCmd.PersistentFlags().IntP("number", "n", 1, "実行するタスクの個数です。default : 1")
+	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
+	srunCmd.PersistentFlags().StringSlice("custom", []string{}, "カスタムコマンドを並列実行します")
 }

@@ -1,14 +1,17 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 var home string = os.Getenv("HOME")
+var taskDir string = filepath.Join(home, ".config", "UHA", "task")
 
 var sim Simulation = Simulation{
 	DstDir: filepath.Join(home, "WorkSpace", "Test"),
@@ -89,6 +92,47 @@ func TestMakeSRun(t *testing.T) {
 			t.Fatal("Unexpected result : index = ", i, " : ", actual[i-1], "\nexpect : ", expect)
 		}
 	}
+}
+
+func TestReadNSeedTaskList(t *testing.T) {
+	b, _ := json.Marshal(nt)
+	p := filepath.Join(taskDir, "srun", RESERVE)
+
+	ReserveSRunDir = p
+
+	t.Run("1", func(t *testing.T) {
+		f := filepath.Join(p, "task1.json")
+
+		log.Println(f)
+
+		if err := ioutil.WriteFile(f, b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		actual := readNSTaskFileList()
+
+		if len(actual) != 2 {
+			t.Fatal("Unexpected result : len(actual) : ", len(actual))
+		}
+	})
+
+	t.Run("2", func(t *testing.T) {
+		f := filepath.Join(p, "task2.json")
+		if err := ioutil.WriteFile(f, b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		actual := readNSTaskFileList()
+
+		if len(actual) != 2 {
+			t.Fatal("Unexpected result : len(actual")
+		}
+	})
+
+}
+
+func TestSRun(t *testing.T) {
+	srun(2, false, []NSeedTask{}, []string{"echo a", "echo b", "echo c"})
 }
 
 func TestZZZ(t *testing.T) {
