@@ -80,16 +80,6 @@ func smakeTask(nt NSeedTask) error {
 	return nil
 }
 
-func makeSAddfile(seed int) (string, error) {
-	p := filepath.Join(ConfigDir, "addfile.txt")
-	tmp, err := ioutil.ReadFile(p)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(string(tmp), seed), nil
-}
-
 type NSeedTask struct {
 	Simulation Simulation
 	Count      int

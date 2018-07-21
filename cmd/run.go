@@ -97,7 +97,7 @@ func runTask(t Task) error {
 			tryMkdir(dst)
 			// ファイルのコピー
 			//spi
-			spi, re := getSPIScript(t.Simulation, monte)
+			spi, re := getSPIScript(t.Simulation, monte, "addfile.txt")
 			if re != nil {
 				log.Println(re)
 				flag = true
@@ -174,7 +174,7 @@ func getACEScript(s string, r Range) []byte {
 	`, s, r.Start, r.Stop, r.Step))
 }
 
-func getSPIScript(s Simulation, monte string) ([]byte, error) {
+func getSPIScript(s Simulation, monte string, addfile string) ([]byte, error) {
 	p := filepath.Join(ConfigDir, "spitemplate.spi")
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
@@ -182,7 +182,7 @@ func getSPIScript(s Simulation, monte string) ([]byte, error) {
 	}
 	tmplt := string(b)
 	return []byte(fmt.Sprintf(tmplt, s.Vtn.Voltage, s.Vtn.Sigma, s.Vtn.Deviation,
-		s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation, monte)), nil
+		s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation, addfile, monte)), nil
 }
 
 func readTask() (Task, string, error) {

@@ -1,0 +1,8 @@
+language: go
+script:
+  - cd cmd
+  - mkdir -p $HOME/WorkSpace/Test
+  - mkdir -p $HOME/.config/UHA
+  - touch $HOME/.config/UHA/addfile.txt
+  - touch $HOME/.config/UHA/spitemplate.spi
+  - go test -v
