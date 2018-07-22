@@ -110,7 +110,7 @@ func TestReadNSeedTaskList(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actual := readNSTaskFileList()
+		actual, _ := readNSTaskFileList()
 
 		if len(actual) != 1 {
 			t.Fatal("Unexpected result : len(actual) : ", len(actual))
