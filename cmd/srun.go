@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -53,7 +54,7 @@ Usage:
 		num, _ := cmd.PersistentFlags().GetInt("number")
 
 		// task list
-		list := readNSTaskFileList()
+		list, files := readNSTaskFileList()
 		if len(list) == 0 && len(custom) == 0 {
 			log.Fatal("タスクが見つかりませんでした")
 		}
@@ -62,13 +63,23 @@ Usage:
 			list = list[0:num]
 		}
 
-		srun(prlel, conti, list, custom)
+		if err := srun(prlel, conti, list, custom); err != nil {
+			for _, v := range files {
+				p := filepath.Join(ReserveSRunDir, v)
+				moveTo(p, FailedSRunDir)
+			}
+		} else {
+			for _, v := range files {
+				p := filepath.Join(ReserveSRunDir, v)
+				moveTo(p, DoneSRunDir)
+			}
+		}
 
 	},
 }
 
 // prlel個並列にタスクを実行する。
-func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
+func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) error {
 	var commands []string
 
 	if len(Custom) == 0 {
@@ -89,6 +100,14 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 	limit := make(chan struct{}, prlel)
 	count := 0
 
+	// resultDir
+	for _, v := range tasks {
+		resultDir := filepath.Join(v.Simulation.DstDir, fmt.Sprintf("Sigma%.4f", v.Simulation.Vtn.Sigma))
+		if err := tryMkdir(resultDir); err != nil {
+			return err
+		}
+	}
+
 	// スピナー
 	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	s.Suffix = "Running... "
@@ -100,6 +119,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 		count++
 
 		log.Println(command)
+		flag := false
 
 		go func(command string, cnt int) {
 			limit <- struct{}{}
@@ -109,23 +129,32 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 				if !conti {
 					log.Fatal(err)
 				}
+				flag = true
 			} else {
 				log.Printf("Finished (%d/%d)\n", cnt, len(commands))
 			}
 			<-limit
 		}(command, count)
+
+		if flag {
+			return errors.New("Failed Simulation")
+		}
 	}
 	wg.Wait()
 	s.Stop()
+
+	return nil
 }
 
 // ReserveSRunDirから、NSeedTaskのJSONとして正しいやつだけ列挙
-func readNSTaskFileList() []NSeedTask {
+func readNSTaskFileList() ([]NSeedTask, []string) {
 	var rt []NSeedTask
 	files, err := ioutil.ReadDir(ReserveSRunDir)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var list []string
 
 	for _, f := range files {
 		p := filepath.Join(ReserveSRunDir, f.Name())
@@ -137,12 +166,14 @@ func readNSTaskFileList() []NSeedTask {
 		jerr := json.Unmarshal(b, &nt)
 		if jerr != nil {
 			log.Println(jerr)
+			continue
 		}
 
 		rt = append(rt, nt)
+		list = append(list, f.Name())
 	}
 
-	return rt
+	return rt, list
 }
 
 func setResultDir(nt NSeedTask) error {
