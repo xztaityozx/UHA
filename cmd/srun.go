@@ -189,7 +189,10 @@ func setResultDir(nt NSeedTask) error {
 func makeSRun(nt NSeedTask) []string {
 	var rt []string
 
-	addfile := nt.Simulation.SimDir
+	addfile := filepath.Join(nt.Simulation.DstDir, "Addfiles")
+	if err := tryMkdir(addfile); err != nil {
+		log.Fatal(err)
+	}
 	// ディレクトリを作る
 	if err := setResultDir(nt); err != nil {
 		log.Fatal(err)
@@ -199,7 +202,7 @@ func makeSRun(nt NSeedTask) []string {
 		log.Fatal(err)
 	}
 	// SPIをつくる
-	if err := setSEEDInputSPI(nt.Count, nt.Simulation.SimDir, nt.Simulation); err != nil {
+	if err := setSEEDInputSPI(nt.Count, nt.Simulation.SimDir, addfile, nt.Simulation); err != nil {
 		log.Fatal(err)
 	}
 
@@ -216,10 +219,10 @@ func makeSRun(nt NSeedTask) []string {
 	return rt
 }
 
-func setSEEDInputSPI(cnt int, p string, sim Simulation) error {
+func setSEEDInputSPI(cnt int, p string, addfile string, sim Simulation) error {
 
 	for i := 1; i <= cnt; i++ {
-		spi, err := getSPIScript(sim, sim.Monte[0], fmt.Sprintf("addfile%d.txt", i))
+		spi, err := getSPIScript(sim, sim.Monte[0], filepath.Join(addfile, fmt.Sprintf("addfile%d.txt", i)))
 		if err != nil {
 			return err
 		}
