@@ -80,6 +80,7 @@ func TestSetResultDir(t *testing.T) {
 }
 
 func TestMakeSRun(t *testing.T) {
+	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 
 	actual := makeSRun(nt)
 	for i := 1; i <= nt.Count; i++ {
