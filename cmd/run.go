@@ -58,12 +58,12 @@ var runCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			if err := runTask(t); err != nil {
-				moveTo(filepath.Join(ReserveRunDir, f), FailedRunDir)
+				moveTo(ReserveRunDir, f, FailedRunDir)
 				if !conti {
 					log.Fatal(err)
 				}
 			} else {
-				moveTo(filepath.Join(ReserveRunDir, f), DoneRunDir)
+				moveTo(ReserveRunDir, f, DoneRunDir)
 				log.Println("Finished ", f)
 			}
 		}
@@ -210,7 +210,7 @@ func readTask() (Task, string, error) {
 	err = json.Unmarshal(b, &task)
 
 	if err != nil {
-		moveTo(filepath.Join(ReserveRunDir, files[0].Name()), FAILED)
+		moveTo(ReserveRunDir, files[0].Name(), FAILED)
 		return Task{}, "", err
 	}
 
@@ -245,7 +245,7 @@ func readAllTask() []Pair {
 		}
 
 		if err != nil {
-			moveTo(filepath.Join(ReserveRunDir, v.Name()), FAILED)
+			moveTo(ReserveRunDir, v.Name(), FAILED)
 			log.Println("不正確なtaskファイルでした : ", v.Name())
 		}
 
@@ -263,12 +263,12 @@ func runAllTask(conti bool) error {
 		p := v.Path
 
 		if err := runTask(t); err != nil {
-			moveTo(filepath.Join(ReserveRunDir, p), FailedRunDir)
+			moveTo(ReserveRunDir, p, FailedRunDir)
 			if !conti {
 				return errors.New("失敗したの終了します")
 			}
 		} else {
-			moveTo(filepath.Join(ReserveRunDir, p), DoneRunDir)
+			moveTo(ReserveRunDir, p, DoneRunDir)
 			log.Println("Finished ", p)
 		}
 	}
@@ -285,8 +285,8 @@ func tryMkdir(p string) error {
 	return nil
 }
 
-func moveTo(f string, dir string) {
-	src := f
+func moveTo(from string, f string, dir string) {
+	src := filepath.Join(from, f)
 
 	dst := filepath.Join(dir, f)
 

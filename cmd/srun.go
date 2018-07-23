@@ -65,11 +65,11 @@ Usage:
 
 		if err := srun(prlel, conti, list, custom); err != nil {
 			for _, v := range files {
-				moveTo(v, FailedSRunDir)
+				moveTo(ReserveSRunDir, v, FailedSRunDir)
 			}
 		} else {
 			for _, v := range files {
-				moveTo(v, DoneSRunDir)
+				moveTo(ReserveSRunDir, v, DoneSRunDir)
 			}
 		}
 
