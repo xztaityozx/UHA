@@ -127,7 +127,7 @@ func TestZZZ(t *testing.T) {
 	f, _ := ioutil.ReadDir(nt.Simulation.DstDir)
 
 	for _, v := range f {
-		if err := os.Remove(filepath.Join(nt.Simulation.DstDir, v.Name())); err != nil {
+		if err := os.RemoveAll(filepath.Join(nt.Simulation.DstDir, v.Name())); err != nil {
 			t.Fatal(err)
 		}
 	}
