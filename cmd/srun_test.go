@@ -37,7 +37,7 @@ func TestSetSEEDInputSPI(t *testing.T) {
 
 	p := sim.SimDir
 
-	if err := setSEEDInputSPI(1, p, sim); err != nil {
+	if err := setSEEDInputSPI(1, p, "", sim); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,6 +80,7 @@ func TestSetResultDir(t *testing.T) {
 }
 
 func TestMakeSRun(t *testing.T) {
+	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 
 	actual := makeSRun(nt)
 	for i := 1; i <= nt.Count; i++ {
@@ -110,7 +111,7 @@ func TestReadNSeedTaskList(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actual := readNSTaskFileList()
+		actual, _ := readNSTaskFileList()
 
 		if len(actual) != 1 {
 			t.Fatal("Unexpected result : len(actual) : ", len(actual))
@@ -127,7 +128,7 @@ func TestZZZ(t *testing.T) {
 	f, _ := ioutil.ReadDir(nt.Simulation.DstDir)
 
 	for _, v := range f {
-		if err := os.Remove(filepath.Join(nt.Simulation.DstDir, v.Name())); err != nil {
+		if err := os.RemoveAll(filepath.Join(nt.Simulation.DstDir, v.Name())); err != nil {
 			t.Fatal(err)
 		}
 	}

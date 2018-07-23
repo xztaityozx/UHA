@@ -39,6 +39,7 @@ var smakeCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		var times, number int
+		var sigma float64
 		var err error
 		times, err = cmd.PersistentFlags().GetInt("times")
 		if err != nil {
@@ -54,7 +55,14 @@ var smakeCmd = &cobra.Command{
 			Count:      number,
 		}
 
+		sigma, err = cmd.PersistentFlags().GetFloat64("sigma")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		nt.Simulation.Monte = []string{strconv.Itoa(times)}
+		nt.Simulation.Vtn.Sigma = sigma
+		nt.Simulation.Vtp.Sigma = sigma
 
 		if err := smakeTask(nt); err != nil {
 			log.Fatal(err)
@@ -88,5 +96,6 @@ type NSeedTask struct {
 func init() {
 	rootCmd.AddCommand(smakeCmd)
 	smakeCmd.PersistentFlags().IntP("times", "T", 50000, "モンテカルロの回数です (default : 50000)")
+	smakeCmd.PersistentFlags().Float64P("sigma", "S", config.Simulation.Vtn.Sigma, "シグマの値を指定します")
 	smakeCmd.PersistentFlags().IntP("number", "n", 1, "SEEDを変更する回数です")
 }

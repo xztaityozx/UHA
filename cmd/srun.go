@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -53,7 +54,7 @@ Usage:
 		num, _ := cmd.PersistentFlags().GetInt("number")
 
 		// task list
-		list := readNSTaskFileList()
+		list, files := readNSTaskFileList()
 		if len(list) == 0 && len(custom) == 0 {
 			log.Fatal("タスクが見つかりませんでした")
 		}
@@ -62,13 +63,21 @@ Usage:
 			list = list[0:num]
 		}
 
-		srun(prlel, conti, list, custom)
+		if err := srun(prlel, conti, list, custom); err != nil {
+			for _, v := range files {
+				moveTo(ReserveSRunDir, v, FailedSRunDir)
+			}
+		} else {
+			for _, v := range files {
+				moveTo(ReserveSRunDir, v, DoneSRunDir)
+			}
+		}
 
 	},
 }
 
 // prlel個並列にタスクを実行する。
-func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
+func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) error {
 	var commands []string
 
 	if len(Custom) == 0 {
@@ -89,6 +98,14 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 	limit := make(chan struct{}, prlel)
 	count := 0
 
+	// resultDir
+	for _, v := range tasks {
+		resultDir := filepath.Join(v.Simulation.DstDir, fmt.Sprintf("Sigma%.4f", v.Simulation.Vtn.Sigma))
+		if err := tryMkdir(resultDir); err != nil {
+			return err
+		}
+	}
+
 	// スピナー
 	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	s.Suffix = "Running... "
@@ -100,6 +117,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 		count++
 
 		log.Println(command)
+		flag := false
 
 		go func(command string, cnt int) {
 			limit <- struct{}{}
@@ -109,23 +127,32 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) {
 				if !conti {
 					log.Fatal(err)
 				}
+				flag = true
 			} else {
 				log.Printf("Finished (%d/%d)\n", cnt, len(commands))
 			}
 			<-limit
 		}(command, count)
+
+		if flag {
+			return errors.New("Failed Simulation")
+		}
 	}
 	wg.Wait()
 	s.Stop()
+
+	return nil
 }
 
 // ReserveSRunDirから、NSeedTaskのJSONとして正しいやつだけ列挙
-func readNSTaskFileList() []NSeedTask {
+func readNSTaskFileList() ([]NSeedTask, []string) {
 	var rt []NSeedTask
 	files, err := ioutil.ReadDir(ReserveSRunDir)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var list []string
 
 	for _, f := range files {
 		p := filepath.Join(ReserveSRunDir, f.Name())
@@ -137,12 +164,14 @@ func readNSTaskFileList() []NSeedTask {
 		jerr := json.Unmarshal(b, &nt)
 		if jerr != nil {
 			log.Println(jerr)
+			continue
 		}
 
 		rt = append(rt, nt)
+		list = append(list, f.Name())
 	}
 
-	return rt
+	return rt, list
 }
 
 func setResultDir(nt NSeedTask) error {
@@ -158,7 +187,10 @@ func setResultDir(nt NSeedTask) error {
 func makeSRun(nt NSeedTask) []string {
 	var rt []string
 
-	addfile := nt.Simulation.SimDir
+	addfile := filepath.Join(nt.Simulation.DstDir, "Addfiles")
+	if err := tryMkdir(addfile); err != nil {
+		log.Fatal(err)
+	}
 	// ディレクトリを作る
 	if err := setResultDir(nt); err != nil {
 		log.Fatal(err)
@@ -168,13 +200,30 @@ func makeSRun(nt NSeedTask) []string {
 		log.Fatal(err)
 	}
 	// SPIをつくる
-	if err := setSEEDInputSPI(nt.Count, nt.Simulation.SimDir, nt.Simulation); err != nil {
+	if err := setSEEDInputSPI(nt.Count, nt.Simulation.SimDir, addfile, nt.Simulation); err != nil {
 		log.Fatal(err)
 	}
 
 	for i := 1; i <= nt.Count; i++ {
 		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
+
+		// resultMap.xml
+		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", "resultsMap.xml")); err != nil {
+			log.Fatal(err)
+		} else {
+			if k := ioutil.WriteFile(filepath.Join(dst, "resultsMap.xml"), r, 0644); k != nil {
+				log.Fatal(k)
+			}
+		}
+		// results.xml
+		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", nt.Simulation.Monte[0])); err != nil {
+			log.Fatal(err)
+		} else {
+			if k := ioutil.WriteFile(filepath.Join(dst, "results.xml"), r, 0644); k != nil {
+				log.Fatal(k)
+			}
+		}
 
 		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && ", dst, input)
 		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", nt.Simulation.Vtn.Sigma)
@@ -185,10 +234,10 @@ func makeSRun(nt NSeedTask) []string {
 	return rt
 }
 
-func setSEEDInputSPI(cnt int, p string, sim Simulation) error {
+func setSEEDInputSPI(cnt int, p string, addfile string, sim Simulation) error {
 
 	for i := 1; i <= cnt; i++ {
-		spi, err := getSPIScript(sim, sim.Monte[0], fmt.Sprintf("addfile%d.txt", i))
+		spi, err := getSPIScript(sim, sim.Monte[0], filepath.Join(addfile, fmt.Sprintf("addfile%d.txt", i)))
 		if err != nil {
 			return err
 		}
