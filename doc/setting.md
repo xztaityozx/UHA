@@ -68,7 +68,7 @@ $ UHA --config /path/to/.UHA.json command
 }
 ```
 
-
+---
 
 ### `Simulation` クループ
 
@@ -120,9 +120,9 @@ VtnとVtpのデフォルト値を決めます
 
 `~/.config/UHA/task`までの絶対パスです
 
+---
 
-
-### Repositoryグループ
+### `Repository`グループ
 
 データを集めるときに使う設定です。主に`UHA get`コマンドで使用します。`UHA get`を使わない場合、この設定はしなくてもいいです。
 
@@ -138,9 +138,9 @@ VtnとVtpのデフォルト値を決めます
 
 
 
+---
 
-
-#### SpreadSheedグループ
+### `SpreadSheed`グループ
 
 データをGoogle SpreadSheetに書き込むときに使う設定です。Google SpreadSheetを使わない場合は設定しなくてもいいです。
 

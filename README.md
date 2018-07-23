@@ -12,7 +12,7 @@ H_PICEのモンテカルロをうまくするツール
 
 ---
 
-- [インストール](doc/install.md)
+- [インストール](doc/Install.md)
 - [使い方](doc/usage.md)
 - [設定](doc/setting.md)
 
