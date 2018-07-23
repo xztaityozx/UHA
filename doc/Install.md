@@ -118,7 +118,7 @@ $ go get github.com/xztaityozx/UHA
 
 
 
-上記の`json`をコピーして `~/.config/UHA` に設置してください。その後適切な値を書き込んでください。詳細は[設定](doc/setting.md)を見てください
+上記の`json`をコピーして `~/.config/UHA` に設置してください。その後適切な値を書き込んでください。詳細は[設定](setting.md)を見てください
 
 
 
