@@ -65,13 +65,11 @@ Usage:
 
 		if err := srun(prlel, conti, list, custom); err != nil {
 			for _, v := range files {
-				p := filepath.Join(ReserveSRunDir, v)
-				moveTo(p, FailedSRunDir)
+				moveTo(v, FailedSRunDir)
 			}
 		} else {
 			for _, v := range files {
-				p := filepath.Join(ReserveSRunDir, v)
-				moveTo(p, DoneSRunDir)
+				moveTo(v, DoneSRunDir)
 			}
 		}
 
