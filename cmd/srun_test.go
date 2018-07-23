@@ -37,7 +37,7 @@ func TestSetSEEDInputSPI(t *testing.T) {
 
 	p := sim.SimDir
 
-	if err := setSEEDInputSPI(1, p, sim); err != nil {
+	if err, _ := setSEEDInputSPI(1, p, sim); err != nil {
 		t.Fatal(err)
 	}
 
