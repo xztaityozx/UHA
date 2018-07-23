@@ -210,6 +210,23 @@ func makeSRun(nt NSeedTask) []string {
 		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
 
+		// resultMap.xml
+		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", "resultsMap.xml")); err != nil {
+			log.Fatal(err)
+		} else {
+			if k := ioutil.WriteFile(filepath.Join(dst, "resultsMap.xml"), r, 0644); k != nil {
+				log.Fatal(k)
+			}
+		}
+		// results.xml
+		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", nt.Simulation.Monte[0])); err != nil {
+			log.Fatal(err)
+		} else {
+			if k := ioutil.WriteFile(filepath.Join(dst, "results.xml"), r, 0644); k != nil {
+				log.Fatal(k)
+			}
+		}
+
 		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && ", dst, input)
 		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", nt.Simulation.Vtn.Sigma)
 
