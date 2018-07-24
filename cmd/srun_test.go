@@ -87,7 +87,7 @@ func TestMakeSRun(t *testing.T) {
 
 		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
-		expect := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv\n", dst, input, i)
+		expect := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../../extract.ace &> wv.log && cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv\n", dst, input, i)
 
 		if expect != actual[i-1] {
 			t.Fatal("Unexpected result : index = ", i, " : ", actual[i-1], "\nexpect : ", expect)
