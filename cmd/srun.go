@@ -176,7 +176,7 @@ func readNSTaskFileList() ([]NSeedTask, []string) {
 
 func setResultDir(nt NSeedTask) error {
 	for i := 1; i <= nt.Count; i++ {
-		p := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
+		p := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		if err := tryMkdir(p); err != nil {
 			return err
 		}
@@ -205,7 +205,7 @@ func makeSRun(nt NSeedTask) []string {
 	}
 
 	for i := 1; i <= nt.Count; i++ {
-		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("Monte%s_SEED%d", nt.Simulation.Monte[0], i))
+		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
 
 		// resultMap.xml
