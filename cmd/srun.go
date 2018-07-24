@@ -90,7 +90,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, start int, Custom []string) 
 		commands = Custom
 	}
 
-	log.Println(commands)
+	//log.Println(commands)
 
 	log.Println("Start Simulation Set :Range=", len(commands))
 
@@ -102,7 +102,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, start int, Custom []string) 
 	// resultDir
 	for _, v := range tasks {
 		resultDir := filepath.Join(v.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s", v.Simulation.Vtn.Sigma, v.Simulation.Monte[0]), "Result")
-		log.Println(resultDir)
+		//log.Println(resultDir)
 		if err := tryMkdir(resultDir); err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, start int, Custom []string) 
 		wg.Add(1)
 		count++
 
-		log.Println(command)
+		//log.Println(command)
 		flag := false
 
 		go func(command string, cnt int) {
@@ -228,7 +228,7 @@ func makeSRun(nt NSeedTask, start int) []string {
 		}
 
 		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../../extract.ace &> wv.log && ", dst, input)
-		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv\n", i)
+		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv && cd ../ && rm -rf SEED*", i)
 
 		rt = append(rt, str)
 	}
