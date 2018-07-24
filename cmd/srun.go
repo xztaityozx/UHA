@@ -228,7 +228,7 @@ func makeSRun(nt NSeedTask, start int) []string {
 		}
 
 		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../../extract.ace &> wv.log && ", dst, input)
-		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv && cd ../ && rm -rf SEED*", i)
+		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%d.csv && cd ../ && rm -rf SEED%d", i, i)
 
 		rt = append(rt, str)
 	}
