@@ -52,6 +52,7 @@ Usage:
 		all, _ := cmd.PersistentFlags().GetBool("all")
 		custom, _ := cmd.PersistentFlags().GetStringSlice("custom")
 		num, _ := cmd.PersistentFlags().GetInt("number")
+		start, _ := cmd.PersistentFlags().GetInt("start")
 
 		// task list
 		list, files := readNSTaskFileList()
@@ -63,7 +64,7 @@ Usage:
 			list = list[0:num]
 		}
 
-		if err := srun(prlel, conti, list, custom); err != nil {
+		if err := srun(prlel, conti, list, start, custom); err != nil {
 			for _, v := range files {
 				moveTo(ReserveSRunDir, v, FailedSRunDir)
 			}
@@ -77,12 +78,12 @@ Usage:
 }
 
 // prlel個並列にタスクを実行する。
-func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) error {
+func srun(prlel int, conti bool, tasks []NSeedTask, start int, Custom []string) error {
 	var commands []string
 
 	if len(Custom) == 0 {
 		for _, v := range tasks {
-			res := makeSRun(v)
+			res := makeSRun(v, start)
 			commands = append(commands, res...)
 		}
 	} else {
@@ -109,7 +110,7 @@ func srun(prlel int, conti bool, tasks []NSeedTask, Custom []string) error {
 	// スピナー
 	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	s.Suffix = "Running... "
-	s.FinalMSG = "Finished!"
+	s.FinalMSG = "All simulation had done\n"
 	s.Start()
 
 	for _, command := range commands {
@@ -174,8 +175,8 @@ func readNSTaskFileList() ([]NSeedTask, []string) {
 	return rt, list
 }
 
-func setResultDir(nt NSeedTask) error {
-	for i := 1; i <= nt.Count; i++ {
+func setResultDir(nt NSeedTask, start int) error {
+	for i := start; i < nt.Count+start; i++ {
 		p := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		if err := tryMkdir(p); err != nil {
 			return err
@@ -184,7 +185,7 @@ func setResultDir(nt NSeedTask) error {
 	return nil
 }
 
-func makeSRun(nt NSeedTask) []string {
+func makeSRun(nt NSeedTask, start int) []string {
 	var rt []string
 
 	addfile := filepath.Join(nt.Simulation.DstDir, "Addfiles")
@@ -192,7 +193,7 @@ func makeSRun(nt NSeedTask) []string {
 		log.Fatal(err)
 	}
 	// ディレクトリを作る
-	if err := setResultDir(nt); err != nil {
+	if err := setResultDir(nt, start); err != nil {
 		log.Fatal(err)
 	}
 	// Addfileを作る
@@ -204,7 +205,7 @@ func makeSRun(nt NSeedTask) []string {
 		log.Fatal(err)
 	}
 
-	for i := 1; i <= nt.Count; i++ {
+	for i := start; i < nt.Count+start; i++ {
 		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
 
@@ -226,7 +227,7 @@ func makeSRun(nt NSeedTask) []string {
 		}
 
 		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && ", dst, input)
-		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", nt.Simulation.Vtn.Sigma)
+		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Sigma%.4f/SEED%d.csv\n", nt.Simulation.Vtn.Sigma, i)
 
 		rt = append(rt, str)
 	}
@@ -283,5 +284,6 @@ func init() {
 	srunCmd.PersistentFlags().BoolP("continue", "C", false, "どこかでシミュレーションが失敗しても続けます")
 	srunCmd.PersistentFlags().IntP("number", "n", 1, "実行するタスクの個数です。default : 1")
 	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
+	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
 	srunCmd.PersistentFlags().StringSlice("custom", []string{}, "カスタムコマンドを並列実行します")
 }

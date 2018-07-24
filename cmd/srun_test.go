@@ -62,18 +62,18 @@ var nt NSeedTask = NSeedTask{
 
 func TestSetResultDir(t *testing.T) {
 
-	if err := setResultDir(nt); err != nil {
+	if err := setResultDir(nt, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	f, _ := ioutil.ReadDir(nt.Simulation.DstDir)
 
-	if len(f) != 3 {
+	if len(f) != 1 {
 		t.Fatal("Unexpected result len(f) : ", len(f))
 	}
 
 	for _, v := range f {
-		if !v.IsDir() || len(v.Name()) != len("Monte50000_SEEDx") {
+		if !v.IsDir() || len(v.Name()) != len("RangeSEED_Sigmax.xxxx_Monte50000") {
 			t.Fatal("Unexpected result")
 		}
 	}
@@ -82,12 +82,12 @@ func TestSetResultDir(t *testing.T) {
 func TestMakeSRun(t *testing.T) {
 	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 
-	actual := makeSRun(nt)
+	actual := makeSRun(nt, 1)
 	for i := 1; i <= nt.Count; i++ {
 
 		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
 		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
-		expect := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 >> ../Sigma%.4f/result\n", dst, input, nt.Simulation.Vtn.Sigma)
+		expect := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../extract.ace &> wv.log && cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Sigma%.4f/SEED%d.csv\n", dst, input, nt.Simulation.Vtn.Sigma, i)
 
 		if expect != actual[i-1] {
 			t.Fatal("Unexpected result : index = ", i, " : ", actual[i-1], "\nexpect : ", expect)
@@ -121,7 +121,7 @@ func TestReadNSeedTaskList(t *testing.T) {
 }
 
 func TestSRun(t *testing.T) {
-	srun(2, false, []NSeedTask{}, []string{"echo a", "echo b", "echo c"})
+	srun(2, false, []NSeedTask{}, 1, []string{"echo a", "echo b", "echo c"})
 }
 
 func TestZZZ(t *testing.T) {
