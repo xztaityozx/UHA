@@ -32,8 +32,14 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "",
-	Long:  ``,
+	Short: "タスクをリストアップします",
+	Long: `UHAの管理下にあるタスクをリストアップします
+Usage:
+	UHA list [--one,-1|--long,-l]
+
+読み込んだコンフィグで設定されている"TaskDir"以下にあるタスクをリストアップします
+
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var one, long bool
 		var err error
@@ -102,6 +108,7 @@ func listReadAllItems() ([]listDirectory, error) {
 		Failed:  listReadDir(FailedRunDir),
 	}
 
+	// SRun
 	srun := listDirectory{
 		Reserve: listReadDir(ReserveSRunDir),
 		Done:    listReadDir(DoneSRunDir),
@@ -111,6 +118,7 @@ func listReadAllItems() ([]listDirectory, error) {
 	return []listDirectory{run, srun}, nil
 }
 
+// p以下を読み取って、listItemの配列にして返す
 func listReadDir(p string) []listItem {
 	if files, err := ioutil.ReadDir(p); err != nil {
 		log.Fatal(err)
@@ -128,6 +136,9 @@ func listReadDir(p string) []listItem {
 	}
 }
 
+// 複数カラムでリストアップします。
+// list : リストアップ対象
+// width : ターミナルの幅
 func multiLineList(list *listDirectory, width int) []string {
 	var rt []string
 	length := 0
@@ -166,6 +177,7 @@ var ListPrefix []string = []string{
 	"\033[1;32m>>\033[0;39m Task of Run:",
 	"\033[1;32m>>\033[0;39m Task of SRun:"}
 
+// 複数カラムのリストアップ用の1行を作ります
 func getMultiLine(l []listItem, c int) []string {
 	var rt []string
 	cnt := 0
@@ -186,6 +198,7 @@ func getMultiLine(l []listItem, c int) []string {
 	return rt
 }
 
+// ファイル名と時間の組み合わせからなるLongなリストアップをします
 func longList(list *listDirectory) []string {
 	var rt []string
 	// Reserve
@@ -206,6 +219,7 @@ func longList(list *listDirectory) []string {
 	return rt
 }
 
+// Longの1行を作ります
 func getLongList(li []listItem) []string {
 	var rt []string
 	tr := len("20180727153226_")
@@ -220,6 +234,7 @@ func getLongList(li []listItem) []string {
 	return rt
 }
 
+// 1カラムだけでリストアップします
 func singleLineList(list *listDirectory) []string {
 	var rt []string
 	// Reserve
@@ -240,6 +255,7 @@ func singleLineList(list *listDirectory) []string {
 	return rt
 }
 
+// 1カラムの1行を作ります
 func getSingleLineList(li []listItem) []string {
 	var rt []string
 	for _, v := range li {
