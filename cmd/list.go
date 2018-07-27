@@ -37,6 +37,7 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var one, long bool
 		var err error
+
 		one, err = cmd.PersistentFlags().GetBool("one")
 		if err != nil {
 			log.Fatal(err)
@@ -49,17 +50,24 @@ var listCmd = &cobra.Command{
 
 		var res []string
 
+		var items []listDirectory
+		items, err = listReadAllItems()
+		if err != nil {
+			log.Fatal(err)
+		}
 		if one {
+			res = append(res, ListPrefix[3])
+			res = append(res, singleLineList(&items[0])...)
+			res = append(res, ListPrefix[4])
+			res = append(res, singleLineList(&items[1])...)
 
 		} else if long {
+			res = append(res, ListPrefix[3])
+			res = append(res, longList(&items[0])...)
+			res = append(res, ListPrefix[4])
+			res = append(res, longList(&items[1])...)
 
 		} else {
-			var items []listDirectory
-			items, err = listReadAllItems()
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			w, _ := terminaldimensions.Width()
 
 			res = append(res, ListPrefix[3])
@@ -180,13 +188,63 @@ func getMultiLine(l []listItem, c int) []string {
 
 func longList(list *listDirectory) []string {
 	var rt []string
+	// Reserve
+	rt = append(rt, fmt.Sprintf(ListPrefix[0], len(list.Reserve)))
+	rt = append(rt, getLongList(list.Reserve)...)
+	rt = append(rt, "")
 
+	// Done
+	rt = append(rt, fmt.Sprintf(ListPrefix[1], len(list.Done)))
+	rt = append(rt, getLongList(list.Done)...)
+	rt = append(rt, "")
+
+	// Failed
+	rt = append(rt, fmt.Sprintf(ListPrefix[2], len(list.Failed)))
+	rt = append(rt, getLongList(list.Failed)...)
+	rt = append(rt, "")
+
+	return rt
+}
+
+func getLongList(li []listItem) []string {
+	var rt []string
+	tr := len("20180727153226_")
+	for _, v := range li {
+		if len(v.Name) > tr {
+			rt = append(rt, fmt.Sprintf("%s\t%s", v.Name[tr:], v.Date))
+		} else {
+			rt = append(rt, fmt.Sprintf("%s\t%s", v.Name, v.Date))
+		}
+
+	}
 	return rt
 }
 
 func singleLineList(list *listDirectory) []string {
 	var rt []string
+	// Reserve
+	rt = append(rt, fmt.Sprintf(ListPrefix[0], len(list.Reserve)))
+	rt = append(rt, getSingleLineList(list.Reserve)...)
+	rt = append(rt, "")
 
+	// Done
+	rt = append(rt, fmt.Sprintf(ListPrefix[1], len(list.Done)))
+	rt = append(rt, getSingleLineList(list.Done)...)
+	rt = append(rt, "")
+
+	// Failed
+	rt = append(rt, fmt.Sprintf(ListPrefix[2], len(list.Failed)))
+	rt = append(rt, getSingleLineList(list.Failed)...)
+	rt = append(rt, "")
+
+	return rt
+}
+
+func getSingleLineList(li []listItem) []string {
+	var rt []string
+	for _, v := range li {
+		rt = append(rt, v.Name)
+	}
 	return rt
 }
 
