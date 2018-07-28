@@ -370,12 +370,13 @@ func writeRangeSEEAddfile(rst *RangeSEEDTask) error {
 
 // このシミュレーションの結果を書き出すディレクトリを作る
 func tryMkRangeSEEDDstDir(rst *RangeSEEDTask) error {
-	p := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%03d", rst.Sigma, rst.Monte, rst.SEED))
+	ts := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s", rst.Sigma, rst.Monte))
+	p := filepath.Join(ts, fmt.Sprintf("SEED%03d", rst.SEED))
 	if err := tryMkdirSuppress(p); err != nil {
 		return err
 	}
 
-	result := filepath.Join(rst.Dst, "Result")
+	result := filepath.Join(ts, "Result")
 	if err := tryMkdirSuppress(result); err != nil {
 		return err
 	}
