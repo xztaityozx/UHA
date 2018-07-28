@@ -196,7 +196,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 		// 並列化
 		for k, v := range tasks {
 			wg.Add(1)
-			go func(num int) {
+			go func(num int, v RangeSEEDTask) {
 				limit <- struct{}{}
 				defer wg.Done()
 
@@ -214,7 +214,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 				log.Printf("Finished (%d/%d)\n", num, len(tasks))
 				<-limit
-			}(k)
+			}(k, v)
 		}
 
 		wg.Wait()
@@ -304,6 +304,7 @@ func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
 			Vtp:     nt.Simulation.Vtp,
 			Sigma:   nt.Simulation.Vtn.Sigma,
 		}
+		fmt.Println(rst)
 		rt = append(rt, rst)
 	}
 
@@ -335,7 +336,7 @@ func writeRangeSEEDSPI(rst *RangeSEEDTask) error {
 		return err
 	}
 	rst.SPI = f
-	log.Println("Write SPIscript To :", f)
+	//log.Println("Write SPIscript To :", f)
 	return nil
 }
 
@@ -364,7 +365,7 @@ func writeRangeSEEAddfile(rst *RangeSEEDTask) error {
 
 	// rstに設定して終わる
 	rst.Addfile = f
-	log.Println("Write Addfile To :", f)
+	//log.Println("Write Addfile To :", f)
 	return nil
 }
 
