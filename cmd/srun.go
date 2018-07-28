@@ -49,12 +49,38 @@ Usage:
 	先に"UHA smake"でタスクを作ってから実行してください
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//conti, _ := cmd.PersistentFlags().GetBool("continue")
-		//prlel, _ := cmd.PersistentFlags().GetInt("parallel")
-		//all, _ := cmd.PersistentFlags().GetBool("all")
-		//custom, _ := cmd.PersistentFlags().GetStringSlice("custom")
-		//num, _ := cmd.PersistentFlags().GetInt("number")
-		//start, _ := cmd.PersistentFlags().GetInt("start")
+		var conti, all, summary bool
+		var prlel, num, start int
+		var err error
+		conti, err = cmd.PersistentFlags().GetBool("continue")
+		if err != nil {
+			log.Fatal(err)
+		}
+		prlel, err = cmd.PersistentFlags().GetInt("parallel")
+		if err != nil {
+			log.Fatal(err)
+		}
+		all, err = cmd.PersistentFlags().GetBool("all")
+		if err != nil {
+			log.Fatal(err)
+		}
+		summary, err = cmd.PersistentFlags().GetBool("summary")
+		if err != nil {
+			log.Fatal(err)
+		}
+		num, err = cmd.PersistentFlags().GetInt("number")
+		if err != nil {
+			log.Fatal(err)
+		}
+		start, err = cmd.PersistentFlags().GetInt("start")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res := RunRangeSEEDSimulation(start, prlel, conti, all, num)
+		if summary {
+			printSummary(&res)
+		}
 
 	},
 }
