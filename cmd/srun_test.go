@@ -78,7 +78,7 @@ func TestAllSRun(t *testing.T) {
 
 	t.Run("004 makeRangeSEEDCommand", func(t *testing.T) {
 		expect := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log &&", rst.Dst, rst.SPI)
-		expect += fmt.Sprintf("wv -k -ace_no_gui ../../extract.csv &> ./wv.log &&")
+		expect += fmt.Sprintf("wv -k -ace_no_gui ../../extract.ace &> ./wv.log &&")
 		expect += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%03d.csv ", rst.SEED)
 
 		log.Println(expect)

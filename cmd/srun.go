@@ -240,7 +240,7 @@ func printSummary(summarys *[]SRunSummary) {
 
 func makeRangeSEEDCommand(rst RangeSEEDTask) string {
 	str := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log &&", rst.Dst, rst.SPI)
-	str += fmt.Sprintf("wv -k -ace_no_gui ../../extract.csv &> ./wv.log &&")
+	str += fmt.Sprintf("wv -k -ace_no_gui ../../extract.ace &> ./wv.log &&")
 	str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%03d.csv ", rst.SEED)
 
 	return str
