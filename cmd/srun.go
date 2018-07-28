@@ -49,7 +49,7 @@ Usage:
 	先に"UHA smake"でタスクを作ってから実行してください
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var conti, all, summary bool
+		var conti, all, summary, gc bool
 		var prlel, num, start int
 		var err error
 		conti, err = cmd.PersistentFlags().GetBool("continue")
@@ -68,6 +68,10 @@ Usage:
 		if err != nil {
 			log.Fatal(err)
 		}
+		gc, err = cmd.PersistentFlags().GetBool("gc")
+		if err != nil {
+			log.Fatal(err)
+		}
 		num, err = cmd.PersistentFlags().GetInt("number")
 		if err != nil {
 			log.Fatal(err)
@@ -77,7 +81,7 @@ Usage:
 			log.Fatal(err)
 		}
 
-		res := RunRangeSEEDSimulation(start, prlel, conti, all, num)
+		res := RunRangeSEEDSimulation(start, prlel, conti, all, gc, num)
 		if summary {
 			printSummary(&res)
 		}
@@ -143,7 +147,7 @@ func srun(task RangeSEEDTask) (SRunSummary, error) {
 }
 
 // SRun本体
-func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, num int) []SRunSummary {
+func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool, num int) []SRunSummary {
 	// Summary
 	var rt []SRunSummary
 
@@ -212,7 +216,9 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, num int)
 			to = FailedSRunDir
 		}
 		// タスクファイルを移動
-		moveTo(ReserveSRunDir, file, to)
+		if gc {
+			moveTo(ReserveSRunDir, file, to)
+		}
 	}
 
 	return rt
@@ -413,4 +419,5 @@ func init() {
 	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
 	srunCmd.PersistentFlags().BoolP("summary", "S", true, "Summaryを出力します")
+	srunCmd.PersistentFlags().Bool("GC", false, "最後に掃除をします")
 }
