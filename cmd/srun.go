@@ -132,6 +132,12 @@ func srun(task RangeSEEDTask, gc bool) (SRunSummary, error) {
 		return summary, err
 	}
 
+	// XML
+	if err := copyRangeSEEDXmls(rst); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
 	// ゴミ掃除
 	if gc {
 		defer removeRangeSEEDGarbage(task)
