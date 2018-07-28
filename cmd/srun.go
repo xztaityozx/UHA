@@ -109,7 +109,7 @@ type SRunSummary struct {
 	FinishTime time.Time
 }
 
-func srun(task RangeSEEDTask) (SRunSummary, error) {
+func srun(task RangeSEEDTask, gc bool) (SRunSummary, error) {
 	var summary SRunSummary = SRunSummary{
 		Name:      fmt.Sprintf("Sigma%.4f-SEED%03d", task.Sigma, task.SEED),
 		StartTime: time.Now(),
@@ -133,7 +133,9 @@ func srun(task RangeSEEDTask) (SRunSummary, error) {
 	}
 
 	// ゴミ掃除
-	defer removeRangeSEEDGarbage(task)
+	if gc {
+		defer removeRangeSEEDGarbage(task)
+	}
 
 	// シミュレーション
 	command := makeRangeSEEDCommand(task)
@@ -193,7 +195,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 				limit <- struct{}{}
 				defer wg.Done()
 
-				sum, err := srun(v)
+				sum, err := srun(v, gc)
 				if err != nil {
 					// 失敗
 					success = false
@@ -216,9 +218,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 			to = FailedSRunDir
 		}
 		// タスクファイルを移動
-		if gc {
-			moveTo(ReserveSRunDir, file, to)
-		}
+		moveTo(ReserveSRunDir, file, to)
 	}
 
 	return rt
