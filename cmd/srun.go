@@ -231,11 +231,11 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 func printSummary(summarys *[]SRunSummary) {
 	status := map[bool]string{
-		true:  "\033[1:32●\033[1:39m  ",
-		false: "\033[1:31●\033[1:39m  ",
+		true:  "\033[1:32m●\033[1:39m  ",
+		false: "\033[1:31m●\033[1:39m  ",
 	}
 
-	fmt.Println("\tName\nStatus\nStartTime\nFinishTime")
+	fmt.Println("Name\tStatus\tStartTime\tFinishTime")
 
 	for _, v := range *summarys {
 		fmt.Printf("%s\t%s\t%s\t%s\n", v.Name, status[v.Status], v.StartTime.Format("2006/01/02/15:04.05"), v.FinishTime.Format("2006/01/02/15:04.05"))
