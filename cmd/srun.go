@@ -133,7 +133,7 @@ func srun(task RangeSEEDTask, gc bool) (SRunSummary, error) {
 	}
 
 	// XML
-	if err := copyRangeSEEDXmls(rst); err != nil {
+	if err := copyRangeSEEDXmls(task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
