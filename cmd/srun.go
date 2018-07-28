@@ -223,7 +223,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 			to = FailedSRunDir
 		}
 		// タスクファイルを移動
-		moveTo(ReserveSRunDir, file, to)
+		moveTo("", file, to)
 	}
 
 	return rt
@@ -304,7 +304,6 @@ func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
 			Vtp:     nt.Simulation.Vtp,
 			Sigma:   nt.Simulation.Vtn.Sigma,
 		}
-		fmt.Println(rst)
 		rt = append(rt, rst)
 	}
 
@@ -372,11 +371,20 @@ func writeRangeSEEAddfile(rst *RangeSEEDTask) error {
 // このシミュレーションの結果を書き出すディレクトリを作る
 func tryMkRangeSEEDDstDir(rst *RangeSEEDTask) error {
 	p := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%03d", rst.Sigma, rst.Monte, rst.SEED))
-	if err := tryMkdir(p); err != nil {
+	if err := tryMkdirSuppress(p); err != nil {
 		return err
 	}
 
 	rst.Dst = p
+	return nil
+}
+
+func tryMkdirSuppress(p string) error {
+	if _, err := os.Stat(p); err != nil {
+		if e := os.MkdirAll(p, 0755); e != nil {
+			return e
+		}
+	}
 	return nil
 }
 
