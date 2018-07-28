@@ -223,7 +223,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 			to = FailedSRunDir
 		}
 		// タスクファイルを移動
-		moveTo("", file, to)
+		moveTo(ReserveSRunDir, file, to)
 	}
 
 	return rt
@@ -307,7 +307,7 @@ func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
 		rt = append(rt, rst)
 	}
 
-	return rt, p, nil
+	return rt, files[0].Name(), nil
 
 }
 
