@@ -375,6 +375,11 @@ func tryMkRangeSEEDDstDir(rst *RangeSEEDTask) error {
 		return err
 	}
 
+	result := filepath.Join(p, "Result")
+	if err := tryMkdirSuppress(result); err != nil {
+		return err
+	}
+
 	rst.Dst = p
 	return nil
 }
