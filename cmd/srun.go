@@ -24,8 +24,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
@@ -47,236 +49,334 @@ Usage:
 	先に"UHA smake"でタスクを作ってから実行してください
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		conti, _ := cmd.PersistentFlags().GetBool("continue")
-		prlel, _ := cmd.PersistentFlags().GetInt("parallel")
-		all, _ := cmd.PersistentFlags().GetBool("all")
-		custom, _ := cmd.PersistentFlags().GetStringSlice("custom")
-		num, _ := cmd.PersistentFlags().GetInt("number")
-		start, _ := cmd.PersistentFlags().GetInt("start")
-
-		// task list
-		list, files := readNSTaskFileList()
-		if len(list) == 0 && len(custom) == 0 {
-			log.Fatal("タスクが見つかりませんでした")
-		}
-
-		if !all {
-			list = list[0:num]
-		}
-
-		if err := srun(prlel, conti, list, start, custom); err != nil {
-			for _, v := range files {
-				moveTo(ReserveSRunDir, v, FailedSRunDir)
-			}
-		} else {
-			for _, v := range files {
-				moveTo(ReserveSRunDir, v, DoneSRunDir)
-			}
-		}
+		//conti, _ := cmd.PersistentFlags().GetBool("continue")
+		//prlel, _ := cmd.PersistentFlags().GetInt("parallel")
+		//all, _ := cmd.PersistentFlags().GetBool("all")
+		//custom, _ := cmd.PersistentFlags().GetStringSlice("custom")
+		//num, _ := cmd.PersistentFlags().GetInt("number")
+		//start, _ := cmd.PersistentFlags().GetInt("start")
 
 	},
 }
 
-// prlel個並列にタスクを実行する。
-func srun(prlel int, conti bool, tasks []NSeedTask, start int, Custom []string) error {
-	var commands []string
-
-	if len(Custom) == 0 {
-		for _, v := range tasks {
-			res := makeSRun(v, start)
-			commands = append(commands, res...)
-		}
-	} else {
-		commands = Custom
-	}
-
-	//log.Println(commands)
-
-	log.Println("Start Simulation Set :Range=", len(commands))
-
-	// WaitGroup
-	var wg sync.WaitGroup
-	limit := make(chan struct{}, prlel)
-	count := 0
-
-	// resultDir
-	for _, v := range tasks {
-		resultDir := filepath.Join(v.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s", v.Simulation.Vtn.Sigma, v.Simulation.Monte[0]), "Result")
-		//log.Println(resultDir)
-		if err := tryMkdir(resultDir); err != nil {
-			return err
-		}
-	}
-
-	// スピナー
-	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
-	s.Suffix = "Running... "
-	s.FinalMSG = "All simulation had done\n"
-	s.Start()
-
-	for _, command := range commands {
-		wg.Add(1)
-		count++
-
-		//log.Println(command)
-		flag := false
-
-		go func(command string, cnt int) {
-			limit <- struct{}{}
-			defer wg.Done()
-
-			if err := exec.Command("bash", "-c", command).Run(); err != nil {
-				if !conti {
-					log.Fatal(err)
-				}
-				flag = true
-			} else {
-				log.Printf("Finished (%d/%d)\n", cnt, len(commands))
-			}
-			<-limit
-		}(command, count)
-
-		if flag {
-			return errors.New("Failed Simulation")
-		}
-	}
-	wg.Wait()
-	s.Stop()
-
-	return nil
+type RangeSEEDTask struct {
+	Addfile string
+	SPI     string
+	Dst     string
+	BaseDir string
+	Sim     string
+	SEED    int
+	Sigma   float64
+	Vtp     Node
+	Vtn     Node
+	Monte   string
 }
 
-// ReserveSRunDirから、NSeedTaskのJSONとして正しいやつだけ列挙
-func readNSTaskFileList() ([]NSeedTask, []string) {
-	var rt []NSeedTask
+type SRunSummary struct {
+	Name       string
+	Status     bool
+	StartTime  time.Time
+	FinishTime time.Time
+}
+
+func srun(task RangeSEEDTask) (SRunSummary, error) {
+	var summary SRunSummary = SRunSummary{
+		Name:      fmt.Sprintf("Sigma%.4f-SEED%03d", task.Sigma, task.SEED),
+		StartTime: time.Now(),
+		Status:    false,
+	}
+
+	// ディレクトリを作る
+	if err := tryMkRangeSEEDDstDir(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+	// Addfile
+	if err := writeRangeSEEAddfile(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+	// SPI
+	if err := writeRangeSEEDSPI(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// ゴミ掃除
+	defer removeRangeSEEDGarbage(task)
+
+	// シミュレーション
+	command := makeRangeSEEDCommand(task)
+	err := exec.Command("bash", "-c", command).Run()
+	summary.FinishTime = time.Now()
+	if err == nil {
+		summary.Status = true
+	}
+
+	return summary, err
+}
+
+// SRun本体
+func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, num int) []SRunSummary {
+	// Summary
+	var rt []SRunSummary
+
 	files, err := ioutil.ReadDir(ReserveSRunDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var list []string
-
-	for _, f := range files {
-		p := filepath.Join(ReserveSRunDir, f.Name())
-		b, rerr := ioutil.ReadFile(p)
-		if rerr != nil {
-			log.Fatal(rerr)
-		}
-		var nt NSeedTask
-		jerr := json.Unmarshal(b, &nt)
-		if jerr != nil {
-			log.Println(jerr)
-			continue
-		}
-
-		rt = append(rt, nt)
-		list = append(list, f.Name())
+	// シミュレーションする個数
+	length := num
+	if len(files) < num || all {
+		length = len(files)
 	}
 
-	return rt, list
-}
+	// spinner
+	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
+	spin.Suffix = "Running... "
+	spin.FinalMSG = fmt.Sprint("All Task had Finished")
+	spin.Writer = os.Stderr
+	spin.Start()
+	defer spin.Stop()
 
-func setResultDir(nt NSeedTask, start int) error {
-	for i := start; i < nt.Count+start; i++ {
-		p := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
-		if err := tryMkdir(p); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+	// waitgroup
+	var wg sync.WaitGroup
+	limit := make(chan struct{}, prlel)
 
-func makeSRun(nt NSeedTask, start int) []string {
-	var rt []string
-
-	addfile := filepath.Join(nt.Simulation.DstDir, "Addfiles")
-	if err := tryMkdir(addfile); err != nil {
-		log.Fatal(err)
-	}
-	// ディレクトリを作る
-	if err := setResultDir(nt, start); err != nil {
-		log.Fatal(err)
-	}
-	// Addfileを作る
-	if err := setAddfileTo(nt.Count, addfile); err != nil {
-		log.Fatal(err)
-	}
-	// SPIをつくる
-	if err := setSEEDInputSPI(nt.Count, nt.Simulation.SimDir, addfile, nt.Simulation); err != nil {
-		log.Fatal(err)
-	}
-
-	for i := start; i < nt.Count+start; i++ {
-		dst := filepath.Join(nt.Simulation.DstDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%d", nt.Simulation.Vtn.Sigma, nt.Simulation.Monte[0], i))
-		input := filepath.Join(nt.Simulation.SimDir, fmt.Sprintf("%s_SEED%d_input.spi", nt.Simulation.Monte[0], i))
-
-		// resultMap.xml
-		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", "resultsMap.xml")); err != nil {
-			log.Fatal(err)
-		} else {
-			if k := ioutil.WriteFile(filepath.Join(dst, "resultsMap.xml"), r, 0644); k != nil {
-				log.Fatal(k)
+	for i := 0; i < length; i++ {
+		// タスク読み出し
+		tasks, file, err := readRangeSEEDTask(start)
+		if err != nil {
+			// 失敗しても継続)
+			if conti {
+				continue
 			}
-		}
-		// results.xml
-		if r, err := ioutil.ReadFile(filepath.Join(SelfPath, "templates", nt.Simulation.Monte[0])); err != nil {
 			log.Fatal(err)
-		} else {
-			if k := ioutil.WriteFile(filepath.Join(dst, "results.xml"), r, 0644); k != nil {
-				log.Fatal(k)
-			}
+		}
+		// 正常終了したか？
+		success := true
+		// 並列化
+		for k, v := range tasks {
+			wg.Add(1)
+			go func(num int) {
+				limit <- struct{}{}
+				defer wg.Done()
+
+				sum, err := srun(v)
+				if err != nil {
+					// 失敗
+					success = false
+					if conti {
+						log.Println("Task", k, "had failed...")
+					} else {
+						log.Fatal(err)
+					}
+				}
+				rt = append(rt, sum)
+
+				log.Printf("Finished (%d/%d)\n", num, len(tasks))
+				<-limit
+			}(k)
 		}
 
-		str := fmt.Sprintf("cd %s && hspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui ../../extract.ace &> wv.log && ", dst, input)
-		str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%03d.csv && cd ../ && rm -rf SEED%d", i, i)
-
-		rt = append(rt, str)
+		wg.Wait()
+		to := DoneSRunDir
+		if !success {
+			to = FailedSRunDir
+		}
+		// タスクファイルを移動
+		moveTo(ReserveSRunDir, file, to)
 	}
 
 	return rt
 }
 
-func setSEEDInputSPI(cnt int, p string, addfile string, sim Simulation) error {
-
-	for i := 1; i <= cnt; i++ {
-		spi, err := getSPIScript(sim, sim.Monte[0], filepath.Join(addfile, fmt.Sprintf("addfile%d.txt", i)))
-		if err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(filepath.Join(p, fmt.Sprintf("%s_SEED%d_input.spi", sim.Monte[0], i)), spi, 0644); err != nil {
-			return err
-		}
+func printSummary(summarys *[]SRunSummary) {
+	status := map[bool]string{
+		true:  "\033[1:32●\033[1:39m  ",
+		false: "\033[1:31●\033[1:39m  ",
 	}
 
+	fmt.Println("\tName\nStatus\nStartTime\nFinishTime")
+
+	for _, v := range *summarys {
+		fmt.Printf("%s\t%s\t%s\t%s\n", v.Name, status[v.Status], v.StartTime.Format("2006/01/02/15:04.05"), v.FinishTime.Format("2006/01/02/15:04.05"))
+	}
+
+}
+
+func makeRangeSEEDCommand(rst RangeSEEDTask) string {
+	str := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log &&", rst.Dst, rst.SPI)
+	str += fmt.Sprintf("wv -k -ace_no_gui ../../extract.csv &> ./wv.log &&")
+	str += fmt.Sprintf("cat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Result/SEED%03d.csv ", rst.SEED)
+
+	return str
+}
+
+func removeRangeSEEDGarbage(rst RangeSEEDTask) error {
+	// remove Addfile
+	if err := os.Remove(rst.Addfile); err != nil {
+		return err
+	}
+	// remove SPI
+	if err := os.Remove(rst.SPI); err != nil {
+		return err
+	}
+	// remove Dst
+	if err := os.RemoveAll(rst.Dst); err != nil {
+		return err
+	}
 	return nil
 }
 
-func setAddfileTo(cnt int, p string) error {
-	for i := 1; i <= cnt; i++ {
-		s, err := makeSAddfile(i)
-		b := []byte(s)
-		if err != nil {
-			return err
-		}
-
-		f := filepath.Join(p, fmt.Sprintf("addfile%d.txt", i))
-		if err := ioutil.WriteFile(f, b, 0644); err != nil {
-			return err
-		}
-		log.Printf("Write Addfile%d To : %s\n", i, f)
+func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
+	var nt NSeedTask
+	files, err := ioutil.ReadDir(ReserveSRunDir)
+	if err != nil {
+		return nil, "", err
 	}
+
+	if len(files) == 0 {
+		return nil, "", errors.New("タスクがありません")
+	}
+
+	p := filepath.Join(ReserveSRunDir, files[0].Name())
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err := json.Unmarshal(b, &nt); err != nil {
+		return nil, "", err
+	}
+	ace := getACEScript(nt.Simulation.Signal, nt.Simulation.Range)
+	if err := ioutil.WriteFile(filepath.Join(nt.Simulation.DstDir, "extract.ace"), ace, 0644); err != nil {
+		return nil, "", err
+	}
+
+	var rt []RangeSEEDTask
+
+	for i := start; i <= nt.Count+start; i++ {
+		rst := RangeSEEDTask{
+			Monte:   nt.Simulation.Monte[0],
+			BaseDir: nt.Simulation.DstDir,
+			Sim:     nt.Simulation.SimDir,
+			SEED:    i,
+			Vtn:     nt.Simulation.Vtn,
+			Vtp:     nt.Simulation.Vtp,
+			Sigma:   nt.Simulation.Vtn.Sigma,
+		}
+		rt = append(rt, rst)
+	}
+
+	return rt, p, nil
+
+}
+
+func writeRangeSEEDSPI(rst *RangeSEEDTask) error {
+	f := filepath.Join(rst.Sim, fmt.Sprintf("Monte%s_Sigma%.4f_SEED%03d.spi", rst.Monte, rst.Sigma, rst.SEED))
+
+	// SPI文字列を作る
+	p := filepath.Join(ConfigDir, "spitemplate.spi")
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	tmplt := string(b)
+	spi := []byte(fmt.Sprintf(tmplt,
+		rst.Vtn.Voltage,
+		rst.Vtn.Sigma,
+		rst.Vtn.Deviation,
+		rst.Vtp.Voltage,
+		rst.Vtp.Sigma,
+		rst.Vtp.Deviation,
+		rst.Addfile,
+		rst.Monte))
+
+	if err := ioutil.WriteFile(f, spi, 0644); err != nil {
+		return err
+	}
+	rst.SPI = f
+	log.Println("Write SPIscript To :", p)
 	return nil
 }
 
-// ConfigDir以下にあるaddfile.txtをテンプレートに、SEEDを変更したaddfileの文字列を作る
-func makeSAddfile(seed int) (string, error) {
+// このシミュレーションで使うAddfileを作る
+func writeRangeSEEAddfile(rst *RangeSEEDTask) error {
+	// tryMkdir
+	dir := filepath.Join(rst.BaseDir, "Addfiles")
+	if err := tryMkdir(dir); err != nil {
+		return err
+	}
+
+	// テンプレを読む
 	p := filepath.Join(ConfigDir, "addfile.txt")
 	tmp, err := ioutil.ReadFile(p)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return fmt.Sprintf(string(tmp), seed), nil
+	// addfileの中身をつくる
+	addfile := []byte(fmt.Sprintf(string(tmp), rst.SEED))
+	f := filepath.Join(dir, fmt.Sprintf("addfile%03d.txt", rst.SEED))
+
+	if err := ioutil.WriteFile(f, addfile, 0644); err != nil {
+		return err
+	}
+
+	// rstに設定して終わる
+	rst.Addfile = f
+	log.Println("Write Addfile To :", f)
+	return nil
+}
+
+// このシミュレーションの結果を書き出すディレクトリを作る
+func tryMkRangeSEEDDstDir(rst *RangeSEEDTask) error {
+	p := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%03d", rst.Sigma, rst.Monte, rst.SEED))
+	if err := tryMkdir(p); err != nil {
+		return err
+	}
+
+	rst.Dst = p
+	return nil
+}
+
+func copyRangeSEEDXmls(rst RangeSEEDTask) error {
+	resultsxml := filepath.Join(SelfPath, "templates", rst.Monte)
+	mapxml := filepath.Join(SelfPath, "templates", "resultsMap.xml")
+
+	{
+		src, e1 := os.Open(resultsxml)
+		if e1 != nil {
+			return e1
+		}
+		p := filepath.Join(rst.Dst, "results.xml")
+		dst, e2 := os.Open(p)
+		if e2 != nil {
+			return e2
+		}
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return err
+		}
+	}
+	{
+		src, e1 := os.Open(mapxml)
+		if e1 != nil {
+			return e1
+		}
+		p := filepath.Join(rst.Dst, "resultsMap.xml")
+		dst, e2 := os.Open(p)
+		if e2 != nil {
+			return e2
+		}
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func init() {
@@ -286,5 +386,5 @@ func init() {
 	srunCmd.PersistentFlags().IntP("number", "n", 1, "実行するタスクの個数です。default : 1")
 	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
-	srunCmd.PersistentFlags().StringSlice("custom", []string{}, "カスタムコマンドを並列実行します")
+	srunCmd.PersistentFlags().BoolP("summary", "S", true, "Summaryを出力します")
 }
