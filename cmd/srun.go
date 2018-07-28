@@ -283,7 +283,7 @@ func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
 
 	var rt []RangeSEEDTask
 
-	for i := start; i <= nt.Count+start; i++ {
+	for i := start; i < nt.Count+start; i++ {
 		rst := RangeSEEDTask{
 			Monte:   nt.Simulation.Monte[0],
 			BaseDir: nt.Simulation.DstDir,
@@ -324,7 +324,7 @@ func writeRangeSEEDSPI(rst *RangeSEEDTask) error {
 		return err
 	}
 	rst.SPI = f
-	log.Println("Write SPIscript To :", p)
+	log.Println("Write SPIscript To :", f)
 	return nil
 }
 
