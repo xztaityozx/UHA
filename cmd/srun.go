@@ -172,7 +172,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 	// spinner
 	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	spin.Suffix = "Running... "
-	spin.FinalMSG = fmt.Sprint("All Task had Finished")
+	spin.FinalMSG = "All Task had Finished\n"
 	spin.Writer = os.Stderr
 	spin.Start()
 	defer spin.Stop()
@@ -205,7 +205,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 					// 失敗
 					success = false
 					if conti {
-						log.Println("Task", k, "had failed...")
+						log.Println("Task", num, "had failed...")
 					} else {
 						log.Fatal(err)
 					}
@@ -214,7 +214,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 				log.Printf("Finished (%d/%d)\n", num, len(tasks))
 				<-limit
-			}(k, v)
+			}(k+1, v)
 		}
 
 		wg.Wait()
