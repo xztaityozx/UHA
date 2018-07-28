@@ -68,7 +68,7 @@ Usage:
 		if err != nil {
 			log.Fatal(err)
 		}
-		gc, err = cmd.PersistentFlags().GetBool("gc")
+		gc, err = cmd.PersistentFlags().GetBool("GC")
 		if err != nil {
 			log.Fatal(err)
 		}
