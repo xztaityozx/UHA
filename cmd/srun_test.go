@@ -12,6 +12,7 @@ func TestAllSRun(t *testing.T) {
 	var home string = os.Getenv("HOME")
 	//var taskDir string = filepath.Join(home, ".config", "UHA", "task")
 	ConfigDir = filepath.Join(home, ".config", "UHA")
+	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 	var rst RangeSEEDTask = RangeSEEDTask{
 		BaseDir: filepath.Join(home, "WorkSpace", "Base"),
 		Sim:     filepath.Join(home, "WorkSpace", "Sim"),
@@ -86,6 +87,12 @@ func TestAllSRun(t *testing.T) {
 		actual := makeRangeSEEDCommand(rst)
 		if actual != expect {
 			t.Fatal("Unexpected result : ", actual)
+		}
+	})
+
+	t.Run("005 copyRangeSEEDXmls", func(t *testing.T) {
+		if err := copyRangeSEEDXmls(rst); err != nil {
+			t.Fatal(err)
 		}
 	})
 }

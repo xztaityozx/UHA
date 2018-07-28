@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -385,32 +384,23 @@ func copyRangeSEEDXmls(rst RangeSEEDTask) error {
 	mapxml := filepath.Join(SelfPath, "templates", "resultsMap.xml")
 
 	{
-		src, e1 := os.Open(resultsxml)
+		src, e1 := ioutil.ReadFile(resultsxml)
 		if e1 != nil {
 			return e1
 		}
-		p := filepath.Join(rst.Dst, "results.xml")
-		dst, e2 := os.Open(p)
-		if e2 != nil {
-			return e2
-		}
+		dst := filepath.Join(rst.Dst, "results.xml")
 
-		if _, err := io.Copy(dst, src); err != nil {
+		if err := ioutil.WriteFile(dst, src, 0644); err != nil {
 			return err
 		}
 	}
 	{
-		src, e1 := os.Open(mapxml)
+		src, e1 := ioutil.ReadFile(mapxml)
 		if e1 != nil {
 			return e1
 		}
-		p := filepath.Join(rst.Dst, "resultsMap.xml")
-		dst, e2 := os.Open(p)
-		if e2 != nil {
-			return e2
-		}
-
-		if _, err := io.Copy(dst, src); err != nil {
+		dst := filepath.Join(rst.Dst, "resultsMap.xml")
+		if err := ioutil.WriteFile(dst, src, 0644); err != nil {
 			return err
 		}
 	}
