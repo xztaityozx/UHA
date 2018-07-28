@@ -171,7 +171,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 	// spinner
 	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
-	spin.Suffix = "Running... "
+	spin.Suffix = " Running... "
 	spin.FinalMSG = "All Task had Finished\n"
 	spin.Writer = os.Stderr
 	spin.Start()
