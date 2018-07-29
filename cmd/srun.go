@@ -80,12 +80,34 @@ Usage:
 			log.Fatal(err)
 		}
 
+		msg := SlackMessage{
+			StartTime: time.Now(),
+		}
 		res := RunRangeSEEDSimulation(start, prlel, conti, all, gc, num)
+		msg.FinishedTime = time.Now()
+
 		if summary {
 			printSummary(&res)
 		}
 
+		msg.Succsess, msg.Failed = countSuccessesRangeSEED(&res)
+
+		if err = Post(config.SlackConfig, msg); err != nil {
+			log.Fatal(err)
+		} else if !SlackNoNotify {
+			log.Println("Post To Slack")
+		}
 	},
+}
+
+func countSuccessesRangeSEED(summary *[]SRunSummary) (int, int) {
+	suc := 0
+	for _, v := range *summary {
+		if v.Status {
+			suc++
+		}
+	}
+	return suc, len(*summary) - suc
 }
 
 type RangeSEEDTask struct {
@@ -431,4 +453,5 @@ func init() {
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
 	srunCmd.PersistentFlags().BoolP("summary", "S", true, "Summaryを出力します")
 	srunCmd.PersistentFlags().Bool("GC", false, "最後に掃除をします")
+	srunCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
 }

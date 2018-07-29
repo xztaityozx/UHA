@@ -303,6 +303,5 @@ func init() {
 	runCmd.PersistentFlags().IntP("number", "n", 1, "実行するシミュレーションセットの個数です")
 	runCmd.PersistentFlags().BoolP("continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
 	runCmd.PersistentFlags().Bool("all", false, "全部実行します")
-	//runCmd.PersistentFlags().StringP("file", "f", "", "タスクファイルを指定します。一つしかできないです")
-	//runCmd.PersistentFlags().Bool("fzf",false,"fzfを使ってファイルを選択します")
+	runCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
 }

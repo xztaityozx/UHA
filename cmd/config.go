@@ -5,6 +5,7 @@ type Config struct {
 	TaskDir     string
 	Repository  []Repository
 	SpreadSheet SpreadSheet
+	SlackConfig SlackConfig
 }
 
 var ConfigDir string
