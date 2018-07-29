@@ -28,7 +28,9 @@ func Post(config SlackConfig, message SlackMessage) error {
 	}
 	api := slack.New(config.Token)
 	text := fmt.Sprintf("<@%s> こちらはUHA botです。シミュレーションが終わりましたよ。\n:seikou: %d 個 :sippai: %d 個\n開始時間 : %s\n終了時間 : %s", config.User, message.Succsess, message.Failed, message.StartTime.Format("2006/01/02/15:04.05"), message.FinishedTime.Format("2006/01/02/15:04.05"))
-	param := slack.PostMessageParameters{}
+	param := slack.PostMessageParameters{
+		AsUser: true,
+	}
 
 	_, _, err := api.PostMessage(config.Channel, text, param)
 	return err
