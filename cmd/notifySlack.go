@@ -32,8 +32,8 @@ func PostFailed(config SlackConfig, err error) error {
 		AsUser: true,
 	}
 
-	_, _, err := api.PostMessage(config.Channel, text, param)
-	return err
+	_, _, xx := api.PostMessage(config.Channel, text, param)
+	return xx
 }
 
 func Post(config SlackConfig, message SlackMessage) error {
