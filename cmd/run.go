@@ -52,20 +52,34 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		count, _ := cmd.PersistentFlags().GetInt("number")
 		conti, _ := cmd.PersistentFlags().GetBool("continue")
+
+		msg := SlackMessage{
+			Failed:    0,
+			Succsess:  0,
+			StartTime: time.Now(),
+		}
+
 		for i := 0; i < count; i++ {
 			t, f, err := readTask()
 			if err != nil {
 				log.Fatal(err)
 			}
 			if err := runTask(t); err != nil {
+				msg.Failed++
 				moveTo(ReserveRunDir, f, FailedRunDir)
 				if !conti {
+					PostFailed(config.SlackConfig, err)
 					log.Fatal(err)
 				}
 			} else {
+				msg.Succsess++
 				moveTo(ReserveRunDir, f, DoneRunDir)
 				log.Println("Finished ", f)
 			}
+		}
+		msg.FinishedTime = time.Now()
+		if err := Post(config.SlackConfig, msg); err != nil {
+			log.Fatal(err)
 		}
 	},
 }

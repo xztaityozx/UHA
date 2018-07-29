@@ -43,7 +43,7 @@ var srunCmd = &cobra.Command{
 	Long: `SEEDを連番生成しながら複数回モンテカルロを実行します
 	
 Usage:
-	UHA srun [--number,-n [NUM]|--parallel,-P [NUM]|--all|--custom [commands]|--continue,-C]
+	UHA srun [--number,-n [NUM]|--parallel,-P [NUM]|--all|--custom [commands]|--continue,-C|--no-notify]
 
 	先に"UHA smake"でタスクを作ってから実行してください
 	`,
@@ -182,6 +182,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 	files, err := ioutil.ReadDir(ReserveSRunDir)
 	if err != nil {
+		PostFailed(config.SlackConfig, err)
 		log.Fatal(err)
 	}
 
@@ -211,6 +212,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 			if conti {
 				continue
 			}
+			PostFailed(config.SlackConfig, err)
 			log.Fatal(err)
 		}
 		// 正常終了したか？
@@ -229,6 +231,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 					if conti {
 						log.Println("Task", num, "had failed...")
 					} else {
+						PostFailed(config.SlackConfig, err)
 						log.Fatal(err)
 					}
 				}

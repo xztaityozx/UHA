@@ -22,6 +22,20 @@ type SlackMessage struct {
 
 var SlackNoNotify bool
 
+func PostFailed(config SlackConfig, err error) error {
+	if SlackNoNotify {
+		return nil
+	}
+	api := slack.New(config.Token)
+	text := fmt.Sprintf("<@%s> シミュレーションに失敗しました・・・ :face_with_rolling_eyes:\n```\n%v\n```", config.User, err)
+	param := slack.PostMessageParameters{
+		AsUser: true,
+	}
+
+	_, _, err := api.PostMessage(config.Channel, text, param)
+	return err
+}
+
 func Post(config SlackConfig, message SlackMessage) error {
 	if SlackNoNotify {
 		return nil
