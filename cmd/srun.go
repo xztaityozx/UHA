@@ -43,7 +43,7 @@ var srunCmd = &cobra.Command{
 	Long: `SEEDを連番生成しながら複数回モンテカルロを実行します
 	
 Usage:
-	UHA srun [--number,-n [NUM]|--parallel,-P [NUM]|--all|--custom [commands]|--continue,-C]
+	UHA srun [--number,-n [NUM]|--parallel,-P [NUM]|--all|--custom [commands]|--continue,-C|--no-notify]
 
 	先に"UHA smake"でタスクを作ってから実行してください
 	`,
@@ -80,12 +80,34 @@ Usage:
 			log.Fatal(err)
 		}
 
+		msg := SlackMessage{
+			StartTime: time.Now(),
+		}
 		res := RunRangeSEEDSimulation(start, prlel, conti, all, gc, num)
+		msg.FinishedTime = time.Now()
+
 		if summary {
 			printSummary(&res)
 		}
 
+		msg.Succsess, msg.Failed = countSuccessesRangeSEED(&res)
+
+		if err = Post(config.SlackConfig, msg); err != nil {
+			log.Fatal(err)
+		} else if !SlackNoNotify {
+			log.Println("Post To Slack")
+		}
 	},
+}
+
+func countSuccessesRangeSEED(summary *[]SRunSummary) (int, int) {
+	suc := 0
+	for _, v := range *summary {
+		if v.Status {
+			suc++
+		}
+	}
+	return suc, len(*summary) - suc
 }
 
 type RangeSEEDTask struct {
@@ -160,6 +182,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 
 	files, err := ioutil.ReadDir(ReserveSRunDir)
 	if err != nil {
+		PostFailed(config.SlackConfig, err)
 		log.Fatal(err)
 	}
 
@@ -189,6 +212,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 			if conti {
 				continue
 			}
+			PostFailed(config.SlackConfig, err)
 			log.Fatal(err)
 		}
 		// 正常終了したか？
@@ -207,6 +231,7 @@ func RunRangeSEEDSimulation(start int, prlel int, conti bool, all bool, gc bool,
 					if conti {
 						log.Println("Task", num, "had failed...")
 					} else {
+						PostFailed(config.SlackConfig, err)
 						log.Fatal(err)
 					}
 				}
@@ -431,4 +456,5 @@ func init() {
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
 	srunCmd.PersistentFlags().BoolP("summary", "S", true, "Summaryを出力します")
 	srunCmd.PersistentFlags().Bool("GC", false, "最後に掃除をします")
+	srunCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
 }
