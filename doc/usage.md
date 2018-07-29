@@ -21,6 +21,8 @@
   - [run]()
   - [smake]()
   - [srun]()
+  - [upgrade]()
+  - [version]()
 
 
 
@@ -206,6 +208,30 @@ UHA srun [--all|-C,--continue|-h,--help|-n,--number [num]|-P,--parallel [num]]
 - `-P,--parallel [num]`
   - シミュレーションを`num`個並列で動かします
   - PCのスペックと相談して __慎重に__ 決めてください
+- `--GC`
+  - CSV以外の中間データを削除します
+- `--no-notify`
+  - Slackに通知しないようにします
+- `--start num`
+  - SEEDの初期値をnumに設定します
+- `-S,--summary`
+  - Summaryを出力します
 
+### upgrade
 
+```sh
+UHA upgrade [-b,--branch [BRANCH]]
+```
 
+UHAをアップグレードします
+
+- `-b,--branch [BRANCH]`
+  - PullしてくるBranchを指定できます
+
+### version
+
+```sh
+UHA version
+```
+
+UHAのバージョン情報を出力して終了します
