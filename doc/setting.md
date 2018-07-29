@@ -64,6 +64,11 @@ $ UHA --config /path/to/.UHA.json command
     "Id":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "CSPath":"/path/to/client_secret.json",
     "TokenPath":"/path/to/token.json"
+  },
+  "SlackConfig":{
+    "Token":"xxxxxxxxxxxxxxxxxxxxxxxxx",
+    "User":"user",
+    "Channel":"channel"
   }
 }
 ```
@@ -161,6 +166,21 @@ VtnとVtpのデフォルト値を決めます
 `token.json` への絶対パスです
 
 
+---
 
+### `SlackConfig`グループ
+シミュレーション終了後Slackへ通知するための設定です
+
+#### Token
+
+BotのTokenです
+
+#### Channel
+
+投稿するチャンネルです
+
+#### User
+
+リプライを飛ばすUser名です
 
 
