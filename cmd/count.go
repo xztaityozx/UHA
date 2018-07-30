@@ -27,7 +27,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/mattn/go-pipeline"
 	"github.com/spakin/awk"
 	"github.com/spf13/cobra"
@@ -42,20 +45,46 @@ Usage:
 	UHA count
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		Count()
+		dir, _ := os.Getwd()
+		if len(args) != 0 {
+			dir = args[0]
+		}
+
+		agg, err := cmd.PersistentFlags().GetBool("aggregate")
+		if err != nil {
+			log.Fatal(err)
+		}
+		only, err := cmd.PersistentFlags().GetBool("only")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if agg {
+			r, f, err := dirAggregate(dir)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if only {
+				fmt.Println(f)
+			} else {
+				fmt.Println(r, f)
+			}
+		} else {
+			Count(dir, only)
+		}
 	},
 }
 
-func Count() {
+func Count(dir string, only bool) {
 	rj := readPushData()
-	rj.Data = aggregate()
+	rj.Data = aggregate(dir, only)
 	writePushData(rj)
 }
 
-func countup(p string) (int, error) {
+func countup(p string) (int, int, error) {
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
-		return -1, err
+		return -1, -1, err
 	}
 	s := awk.NewScript()
 	s.Begin = func(s *awk.Script) { s.State = 0 }
@@ -68,20 +97,22 @@ func countup(p string) (int, error) {
 
 	r := strings.NewReader(string(b))
 	if err := s.Run(r); err != nil {
-		return -1, err
+		return s.NR, -1, err
 	}
 
-	return s.State.(int), nil
+	return s.NR, s.State.(int), nil
 
 }
 
-func aggregate() []interface{} {
+func aggregate(wd string, only bool) []interface{} {
 	var rt []interface{}
 
-	wd, _ := os.Getwd()
-	if len(wd) < len("Sigmax.xxxx") {
-		log.Fatal("カレントディレクトリの命名ルールが違います")
+	if err := os.Chdir(wd); err != nil {
+		log.Fatal(err)
 	}
+	//if len(wd) < len("Sigmax.xxxx") {
+	//log.Fatal("カレントディレクトリの命名ルールが違います")
+	//}
 	wl := len(wd)
 	sigma := wd[wl-6 : wl-1]
 	log.Print("Open Sigma : ", sigma)
@@ -103,17 +134,72 @@ func aggregate() []interface{} {
 		if len(v) == 0 {
 			continue
 		}
-		cnt, err := countup(filepath.Join(wd, v))
+		_, cnt, err := countup(filepath.Join(wd, v))
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		rt = append(rt, cnt)
-		fmt.Println(v, cnt)
+		if only {
+			fmt.Println(cnt)
+		} else {
+			fmt.Println(v, cnt)
+		}
 	}
 	return rt
 }
 
+// ディレクトリ
+func dirAggregate(dir string) (int, int, error) {
+	// 移動する
+	if err := os.Chdir(dir); err != nil {
+		return -1, -1, err
+	}
+
+	b, err := pipeline.Output(
+		[]string{"ls", "-1"},
+		[]string{"grep", ".csv"},
+		[]string{"sort", "-n"},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files := strings.Split(string(b), "\n")
+
+	size := 0
+	failure := 0
+
+	var wg sync.WaitGroup
+	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
+	s.Suffix = " Counting..."
+	s.FinalMSG = "Aggregated"
+	s.Start()
+	defer s.Stop()
+
+	for _, v := range files {
+		if len(v) == 0 {
+			continue
+		}
+
+		go func(v string) {
+			wg.Add(1)
+			defer wg.Done()
+			n, cnt, err := countup(filepath.Join(dir, v))
+			if err != nil {
+				log.Fatal(err)
+			}
+			size += n
+			failure += cnt
+		}(v)
+	}
+	wg.Wait()
+
+	return size, failure, nil
+}
+
 func init() {
 	rootCmd.AddCommand(countCmd)
+	countCmd.PersistentFlags().BoolP("aggregate", "A", false, "ディレクトリ以下のファイルを1つのデータの集合としてカウントします")
+	countCmd.PersistentFlags().BoolP("only", "o", false, "不良数だけを出力します")
 }
