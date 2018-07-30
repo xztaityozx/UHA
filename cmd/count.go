@@ -181,9 +181,9 @@ func dirAggregate(dir string) (int, int, error) {
 		if len(v) == 0 {
 			continue
 		}
+		wg.Add(1)
 
 		go func(v string) {
-			wg.Add(1)
 			defer wg.Done()
 			n, cnt, err := countup(filepath.Join(dir, v))
 			if err != nil {

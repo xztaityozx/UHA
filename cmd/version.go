@@ -30,8 +30,8 @@ var Version UHAVersion = UHAVersion{
 	Major:    1,
 	Minor:    3,
 	Build:    40,
-	Revision: 2,
-	Status:   "Stable",
+	Revision: 3,
+	Status:   "Beta",
 	Date:     "2018/07/30",
 }
 
