@@ -69,6 +69,10 @@ func upgrade(branch string) error {
 		log.Fatal(string(b))
 	}
 
+	if b, err := git.CombinedOutput(); err != nil {
+		log.Fatal(string(b))
+	}
+
 	get := exec.Command("go", "get")
 	if b, err := get.CombinedOutput(); err != nil {
 		log.Fatal(string(b))
