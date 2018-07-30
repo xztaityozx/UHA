@@ -173,7 +173,7 @@ func dirAggregate(dir string) (int, int, error) {
 	var wg sync.WaitGroup
 	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	s.Suffix = " Counting..."
-	s.FinalMSG = "Aggregated"
+	s.FinalMSG = "Aggregated\n"
 	s.Start()
 	defer s.Stop()
 
@@ -182,8 +182,6 @@ func dirAggregate(dir string) (int, int, error) {
 			continue
 		}
 		wg.Add(1)
-
-		log.Println(v)
 
 		go func(v string) {
 			defer wg.Done()
