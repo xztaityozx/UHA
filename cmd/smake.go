@@ -95,7 +95,7 @@ type NSeedTask struct {
 
 func init() {
 	rootCmd.AddCommand(smakeCmd)
-	smakeCmd.PersistentFlags().IntP("times", "T", 50000, "モンテカルロの回数です (default : 50000)")
+	smakeCmd.PersistentFlags().IntP("times", "T", 50000, "モンテカルロの回数です")
 	smakeCmd.PersistentFlags().Float64P("sigma", "S", config.Simulation.Vtn.Sigma, "シグマの値を指定します")
-	smakeCmd.PersistentFlags().IntP("number", "n", 1, "SEEDを変更する回数です")
+	smakeCmd.PersistentFlags().IntP("number", "n", 1, "SEEDの個数です")
 }

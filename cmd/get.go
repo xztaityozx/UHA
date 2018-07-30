@@ -88,7 +88,7 @@ func getFromDst(src string) error {
 				log.Fatal(err)
 			}
 			rj := readPushData()
-			rj.Data = aggregate()
+			rj.Data = aggregate(wd, false)
 			Push(rj)
 			if err := os.Chdir(wd); err != nil {
 				log.Fatal(err)
