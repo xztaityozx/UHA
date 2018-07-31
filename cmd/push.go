@@ -141,6 +141,8 @@ func Push(pd *PushData, id string, sheet string) {
 	if cr.Next == cr.End {
 		cr.Next = cr.Start
 		cr.RowStart += len(pd.Data)
+	} else {
+		cr.Next = string(cr.Next[0] + 1)
 	}
 	config.SpreadSheet.ColRow = cr
 	if err := WriteConfig(); err != nil {
