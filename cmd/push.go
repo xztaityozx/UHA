@@ -67,8 +67,8 @@ Usage:
 		ignoreSigma, _ := cmd.PersistentFlags().GetBool("ignore-sigma")
 
 		// spinner
-		spin := spinner.New(spinner.CharSets[27], 100*time.Millisecond)
-		spin.Suffix = "Counting and Pushing... "
+		spin := spinner.New(spinner.CharSets[36], 100*time.Millisecond)
+		spin.Suffix = " Counting and Pushing... "
 		spin.FinalMSG = "Finished!\n"
 		spin.Start()
 		defer spin.Stop()
@@ -95,14 +95,14 @@ func getPushData(dir string) (PushData, error) {
 }
 
 func Push(pd *PushData) {
-	//spreadsheetId := config.SpreadSheet.Id
-	//ctx := context.Background()
-	//client := getClient(ctx, config.SpreadSheet.CSPath)
+	spreadsheetId := config.SpreadSheet.Id
+	ctx := context.Background()
+	client := getClient(ctx, config.SpreadSheet.CSPath)
 
-	//sheetService, err := sheets.New(client)
-	//if err != nil {
-	//log.Fatal(err)
-	//}
+	sheetService, err := sheets.New(client)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	data := []*sheets.ValueRange{
 		{
@@ -114,19 +114,19 @@ func Push(pd *PushData) {
 		},
 	}
 
-	//reqest := &sheets.BatchUpdateValuesRequest{
-	//ValueInputOption: "USER_ENTERED",
-	//Data:             data,
-	//}
+	reqest := &sheets.BatchUpdateValuesRequest{
+		ValueInputOption: "USER_ENTERED",
+		Data:             data,
+	}
 
-	fmt.Printf("%v\n%s\n", data[0].Values, data[0].Range)
+	//fmt.Printf("%v\n%s\n", data[0].Values, data[0].Range)
 
-	//res, err := sheetService.Spreadsheets.Values.BatchUpdate(spreadsheetId, reqest).Context(ctx).Do()
-	//if err != nil {
-	//log.Fatal(err)
-	//}
+	res, err := sheetService.Spreadsheets.Values.BatchUpdate(spreadsheetId, reqest).Context(ctx).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	//fmt.Printf("%#v\n", res)
+	fmt.Printf("%#v\n", res)
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
