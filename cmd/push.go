@@ -146,7 +146,8 @@ func Push(pd *PushData, id string, sheet string) {
 		cr.Next = string(cr.Next[0] + 1)
 	}
 
-	viper.Set("SpreadSheet.ColRow", cr)
+	config.SpreadSheet.ColRow = cr
+	viper.Set("SpreadSheet", config.SpreadSheet)
 
 	if err := WriteConfig(); err != nil {
 		log.Fatal(err)
