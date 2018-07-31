@@ -36,6 +36,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // pushCmd represents the push command
@@ -144,7 +145,9 @@ func Push(pd *PushData, id string, sheet string) {
 	} else {
 		cr.Next = string(cr.Next[0] + 1)
 	}
-	config.SpreadSheet.ColRow = cr
+
+	viper.Set("SpreadSheet.ColRow", cr)
+
 	if err := WriteConfig(); err != nil {
 		log.Fatal(err)
 	}
