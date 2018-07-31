@@ -73,7 +73,7 @@ func Push(rj *PushData) {
 
 	data := []*sheets.ValueRange{
 		{
-			Range: fmt.Sprintf("%s%d:%s%d", rj.Column, rj.Start, rj.Column, rj.End),
+			Range: fmt.Sprintf("%s!%s%d:%s%d", config.SpreadSheet.SheetName, rj.Column, rj.Start, rj.Column, rj.End),
 			Values: [][]interface{}{
 				rj.Data,
 			},

@@ -31,6 +31,7 @@ type SpreadSheet struct {
 	Id        string
 	CSPath    string
 	TokenPath string
+	SheetName string
 }
 
 type Task struct {
