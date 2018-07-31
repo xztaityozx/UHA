@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -70,15 +71,11 @@ Usage:
 				fmt.Println(r, f)
 			}
 		} else {
-			Count(dir, only)
+			for _, v := range Count(dir) {
+				fmt.Println(v)
+			}
 		}
 	},
-}
-
-func Count(dir string, only bool) {
-	rj := readPushData()
-	rj.Data = aggregate(dir, only)
-	writePushData(rj)
 }
 
 func countup(p string) (int, int, error) {
@@ -104,18 +101,25 @@ func countup(p string) (int, int, error) {
 
 }
 
-func aggregate(wd string, only bool) []interface{} {
+func Count(wd string) []interface{} {
 	var rt []interface{}
 
 	if err := os.Chdir(wd); err != nil {
 		log.Fatal(err)
 	}
-	//if len(wd) < len("Sigmax.xxxx") {
-	//log.Fatal("カレントディレクトリの命名ルールが違います")
-	//}
+
 	wl := len(wd)
 	sigma := wd[wl-6 : wl-1]
-	log.Print("Open Sigma : ", sigma)
+
+	if RangeSEEDCount {
+		c := exec.Command("bash", "-c", "cd ../ && basename $(pwd) | sed 's/RangeSEED\\|_\\|Sigma\\|Monte.*$//g'")
+		o, err := c.CombinedOutput()
+		if err != nil {
+			log.Fatal(string(o))
+		}
+
+		sigma = string(o)
+	}
 
 	rt = append(rt, sigma)
 
@@ -140,11 +144,11 @@ func aggregate(wd string, only bool) []interface{} {
 		}
 
 		rt = append(rt, cnt)
-		if only {
-			fmt.Println(cnt)
-		} else {
-			fmt.Println(v, cnt)
-		}
+		//if only {
+		//fmt.Println(cnt)
+		//} else {
+		//fmt.Println(v, cnt)
+		//}
 	}
 	return rt
 }
@@ -198,8 +202,11 @@ func dirAggregate(dir string) (int, int, error) {
 	return size, failure, nil
 }
 
+var RangeSEEDCount bool
+
 func init() {
 	rootCmd.AddCommand(countCmd)
 	countCmd.PersistentFlags().BoolP("aggregate", "A", false, "ディレクトリ以下のファイルを1つのデータの集合としてカウントします")
 	countCmd.PersistentFlags().BoolP("only", "o", false, "不良数だけを出力します")
+	countCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
 }

@@ -82,19 +82,6 @@ func getFromDst(src string) error {
 			return err
 		}
 
-		if getAndPush {
-			wd, _ := os.Getwd()
-			if err := os.Chdir(t); err != nil {
-				log.Fatal(err)
-			}
-			rj := readPushData()
-			rj.Data = aggregate(wd, false)
-			Push(rj)
-			if err := os.Chdir(wd); err != nil {
-				log.Fatal(err)
-			}
-		}
-
 	}
 
 	return nil

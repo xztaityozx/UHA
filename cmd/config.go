@@ -31,6 +31,8 @@ type SpreadSheet struct {
 	Id        string
 	CSPath    string
 	TokenPath string
+	SheetName string
+	ColRow    SSColRow
 }
 
 type Task struct {
@@ -58,4 +60,16 @@ type Range struct {
 	Start string
 	Stop  string
 	Step  string
+}
+
+type SSColRow struct {
+	Next     string
+	Start    string
+	End      string
+	RowStart int
+}
+
+type PushData struct {
+	ColRow SSColRow
+	Data   []interface{}
 }
