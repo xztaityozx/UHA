@@ -105,7 +105,7 @@ func Push(pd *PushData) {
 	//Data:             data,
 	//}
 
-	fmt.Println(&data[0])
+	fmt.Printf("%v\n%s\n", data[0].Values, data[0].Range)
 
 	//res, err := sheetService.Spreadsheets.Values.BatchUpdate(spreadsheetId, reqest).Context(ctx).Do()
 	//if err != nil {
