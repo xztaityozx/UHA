@@ -27,12 +27,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/sheets/v4"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -62,9 +64,21 @@ Usage:
 			dir = args[0]
 		}
 
+		ignoreSigma, _ := cmd.PersistentFlags().GetBool("ignore-sigma")
+
+		// spinner
+		spin := spinner.New(spinner.CharSets[27], 100*time.Millisecond)
+		spin.Suffix = "Counting and Pushing... "
+		spin.FinalMSG = "Finished!\n"
+		spin.Start()
+		defer spin.Stop()
+
 		if pd, err := getPushData(dir); err != nil {
 			log.Fatal(err)
 		} else {
+			if ignoreSigma {
+				pd.Data = pd.Data[1:]
+			}
 			Push(&pd)
 		}
 	},
@@ -179,4 +193,5 @@ func saveToken(path string, token *oauth2.Token) {
 func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+	pushCmd.PersistentFlags().BoolP("ignore-sigma", "G", false, "Sigmaの値を除外します")
 }
