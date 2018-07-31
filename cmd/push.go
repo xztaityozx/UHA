@@ -101,7 +101,7 @@ func Push(pd *PushData) {
 	//log.Fatal(err)
 	//}
 
-	fmt.Printf("%#v\n", res)
+	//fmt.Printf("%#v\n", res)
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
