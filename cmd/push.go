@@ -56,6 +56,17 @@ Usage:
 		if _, err := os.Stat(NextPath); err != nil {
 			log.Fatal(err)
 		}
+
+		dir, _ := os.Getwd()
+		if len(args) != 0 {
+			dir = args[0]
+		}
+
+		if pd, err := getPushData(dir); err != nil {
+			log.Fatal(err)
+		} else {
+			Push(&pd)
+		}
 	},
 }
 
@@ -70,14 +81,14 @@ func getPushData(dir string) (PushData, error) {
 }
 
 func Push(pd *PushData) {
-	spreadsheetId := config.SpreadSheet.Id
-	ctx := context.Background()
-	client := getClient(ctx, config.SpreadSheet.CSPath)
+	//spreadsheetId := config.SpreadSheet.Id
+	//ctx := context.Background()
+	//client := getClient(ctx, config.SpreadSheet.CSPath)
 
-	sheetService, err := sheets.New(client)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//sheetService, err := sheets.New(client)
+	//if err != nil {
+	//log.Fatal(err)
+	//}
 
 	data := []*sheets.ValueRange{
 		{
@@ -89,10 +100,10 @@ func Push(pd *PushData) {
 		},
 	}
 
-	reqest := &sheets.BatchUpdateValuesRequest{
-		ValueInputOption: "USER_ENTERED",
-		Data:             data,
-	}
+	//reqest := &sheets.BatchUpdateValuesRequest{
+	//ValueInputOption: "USER_ENTERED",
+	//Data:             data,
+	//}
 
 	fmt.Println(data)
 
