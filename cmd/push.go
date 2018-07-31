@@ -65,6 +65,8 @@ Usage:
 		}
 
 		ignoreSigma, _ := cmd.PersistentFlags().GetBool("ignore-sigma")
+		id, _ := cmd.PersistentFlags().GetString("Id")
+		sheet, _ := cmd.PersistentFlags().GetString("name")
 
 		// spinner
 		spin := spinner.New(spinner.CharSets[36], 100*time.Millisecond)
@@ -79,7 +81,7 @@ Usage:
 			if ignoreSigma {
 				pd.Data = pd.Data[1:]
 			}
-			Push(&pd)
+			Push(&pd, id, sheet)
 		}
 	},
 }
@@ -94,8 +96,8 @@ func getPushData(dir string) (PushData, error) {
 	return pd, nil
 }
 
-func Push(pd *PushData) {
-	spreadsheetId := config.SpreadSheet.Id
+func Push(pd *PushData, id string, sheet string) {
+	spreadsheetId := id
 	ctx := context.Background()
 	client := getClient(ctx, config.SpreadSheet.CSPath)
 
@@ -106,7 +108,7 @@ func Push(pd *PushData) {
 
 	data := []*sheets.ValueRange{
 		{
-			Range: fmt.Sprintf("%s!%s%d:%s%d", config.SpreadSheet.SheetName, pd.ColRow.Next, pd.ColRow.RowStart, pd.ColRow.Next, pd.ColRow.RowStart+len(pd.Data)),
+			Range: fmt.Sprintf("%s!%s%d:%s%d", sheet, pd.ColRow.Next, pd.ColRow.RowStart, pd.ColRow.Next, pd.ColRow.RowStart+len(pd.Data)),
 			Values: [][]interface{}{
 				pd.Data,
 			},
@@ -127,6 +129,17 @@ func Push(pd *PushData) {
 	}
 
 	fmt.Printf("%#v\n", res)
+
+	// 次にすすめる
+	cr := config.SpreadSheet.ColRow
+	if cr.Next == cr.End {
+		cr.Next = cr.Start
+		cr.RowStart += len(pd.Data)
+	}
+	config.SpreadSheet.ColRow = cr
+	if err := WriteConfig(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
@@ -194,4 +207,6 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
 	pushCmd.PersistentFlags().BoolP("ignore-sigma", "G", false, "Sigmaの値を除外します")
+	pushCmd.PersistentFlags().String("Id", config.SpreadSheet.Id, "SpreadSheetのIDです")
+	pushCmd.PersistentFlags().StringP("name", "n", config.SpreadSheet.SheetName, "SpreadSheetのシート名です")
 }
