@@ -66,7 +66,13 @@ Usage:
 
 		ignoreSigma, _ := cmd.PersistentFlags().GetBool("ignore-sigma")
 		id, _ := cmd.PersistentFlags().GetString("Id")
+		if len(id) == 0 {
+			id = config.SpreadSheet.Id
+		}
 		sheet, _ := cmd.PersistentFlags().GetString("name")
+		if len(sheet) == 0 {
+			sheet = config.SpreadSheet.SheetName
+		}
 
 		// spinner
 		spin := spinner.New(spinner.CharSets[36], 100*time.Millisecond)
@@ -207,6 +213,6 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
 	pushCmd.PersistentFlags().BoolP("ignore-sigma", "G", false, "Sigmaの値を除外します")
-	pushCmd.PersistentFlags().String("Id", config.SpreadSheet.Id, "SpreadSheetのIDです")
-	pushCmd.PersistentFlags().StringP("name", "n", config.SpreadSheet.SheetName, "SpreadSheetのシート名です")
+	pushCmd.PersistentFlags().String("Id", "", "SpreadSheetのIDです")
+	pushCmd.PersistentFlags().StringP("name", "n", "", "SpreadSheetのシート名です")
 }
