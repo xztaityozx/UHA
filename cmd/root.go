@@ -81,7 +81,6 @@ func init() {
 	viper.SetDefault("DoneDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "done"))
 	viper.SetDefault("SpreadSheet", SpreadSheet{})
 
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -106,7 +105,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		//fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
@@ -133,4 +132,8 @@ func initConfig() {
 	tryMkdir(DoneSRunDir)
 	tryMkdir(FailedSRunDir)
 
+}
+
+func WriteConfig() error {
+	return viper.WriteConfig()
 }

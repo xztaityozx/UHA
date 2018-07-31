@@ -56,12 +56,20 @@ Usage:
 		if _, err := os.Stat(NextPath); err != nil {
 			log.Fatal(err)
 		}
-		rj := readPushData()
-		Push(rj)
 	},
 }
 
-func Push(rj *PushData) {
+func getPushData(dir string) (PushData, error) {
+
+	pd := PushData{
+		Data:   Count(dir),
+		ColRow: config.SpreadSheet.ColRow,
+	}
+
+	return pd, nil
+}
+
+func Push(pd *PushData) {
 	spreadsheetId := config.SpreadSheet.Id
 	ctx := context.Background()
 	client := getClient(ctx, config.SpreadSheet.CSPath)
@@ -73,9 +81,9 @@ func Push(rj *PushData) {
 
 	data := []*sheets.ValueRange{
 		{
-			Range: fmt.Sprintf("%s!%s%d:%s%d", config.SpreadSheet.SheetName, rj.Column, rj.Start, rj.Column, rj.End),
+			Range: fmt.Sprintf("%s!%s%d:%s%d", config.SpreadSheet.SheetName, pd.ColRow.Next, pd.ColRow.RowStart, pd.ColRow.Next, pd.ColRow.RowStart+len(pd.Data)),
 			Values: [][]interface{}{
-				rj.Data,
+				pd.Data,
 			},
 			MajorDimension: "COLUMNS",
 		},
@@ -86,26 +94,14 @@ func Push(rj *PushData) {
 		Data:             data,
 	}
 
-	res, err := sheetService.Spreadsheets.Values.BatchUpdate(spreadsheetId, reqest).Context(ctx).Do()
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println(data)
+
+	//res, err := sheetService.Spreadsheets.Values.BatchUpdate(spreadsheetId, reqest).Context(ctx).Do()
+	//if err != nil {
+	//log.Fatal(err)
+	//}
 
 	fmt.Printf("%#v\n", res)
-
-	writeNewNextData(rj)
-
-}
-
-func writePushData(pd *PushData) {
-	j, err := json.Marshal(pd)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(NextPath, j, 0644); err != nil {
-		log.Fatal(err)
-	}
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
@@ -169,54 +165,7 @@ func saveToken(path string, token *oauth2.Token) {
 	}
 	json.NewEncoder(f).Encode(token)
 }
-
-type PushData struct {
-	Column string        `json:"Column"`
-	Data   []interface{} `json:"Data"`
-	Start  int           `json:"Start"`
-	End    int           `json:"End"`
-}
-
-func readPushData() *PushData {
-	path := NextPath
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var writeData PushData
-	if err := json.Unmarshal(b, &writeData); err != nil {
-		log.Fatal(err)
-	}
-	return &writeData
-}
-
-func writeNewNextData(rd *PushData) {
-	cur := rd.Column
-	var next string
-	st := rd.Start
-	ed := rd.End
-
-	if cur == "Z" {
-		next = "E"
-		st = ed + 2
-		ed = st + 9
-	} else {
-		next = string([]byte(cur)[0] + 1)
-	}
-	wd := PushData{
-		Column: next,
-		Data:   []interface{}{},
-		Start:  st,
-		End:    ed,
-	}
-	path := NextPath
-	jb, err := json.Marshal(wd)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ioutil.WriteFile(path, jb, 0644)
-}
-
 func init() {
 	rootCmd.AddCommand(pushCmd)
+	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
 }
