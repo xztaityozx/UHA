@@ -38,7 +38,7 @@ func TestAllSRun(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		p := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Sigma%.4f_Monte%s/SEED%03d", rst.Sigma, rst.Monte, rst.SEED))
+		p := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Vtn%.4fVtp%.4f_Sigma%.4f_Monte%s/SEED%03d", rst.Vtn.Sigma, rst.Vtp.Sigma, rst.Sigma, rst.Monte, rst.SEED))
 		if _, err := os.Stat(p); err != nil {
 			t.Fatal(err)
 		}
@@ -67,7 +67,7 @@ func TestAllSRun(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		f := filepath.Join(rst.Sim, "Monte500_Sigma0.1000_SEED001.spi")
+		f := filepath.Join(rst.Sim, "Vtn0.1000Vtp0.1000Monte500_Sigma0.1000_SEED001.spi")
 		if _, err := os.Stat(f); err != nil {
 			t.Fatal(err)
 		}

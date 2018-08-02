@@ -96,7 +96,7 @@ func runTask(t Task) error {
 	cnt := 0
 	size := len(t.Simulation.Monte)
 
-	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Sigma%.4f", t.Simulation.Vtn.Sigma))
+	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Vtn%.4fVtp%.4f/Sigma%.4f", t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma, t.Simulation.Vtn.Sigma))
 	if err := tryMkdir(outDir); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func runTask(t Task) error {
 				flag = true
 				return
 			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%sinput.spi", monte)), spi, 0644); err != nil {
+			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%s_%.4f_%.4finput.spi", monte, t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma)), spi, 0644); err != nil {
 				log.Println(err)
 				flag = true
 				return
@@ -155,7 +155,7 @@ func runTask(t Task) error {
 				return
 			}
 
-			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Sigma%.4f/%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%sinput.spi", monte)), t.Simulation.Vtn.Sigma, monte)
+			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Vtn%.4fVtp%.4f/Sigma%.4f/%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%s_%.4f_%.4finput.spi", monte, t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma)), t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma, t.Simulation.Vtn.Sigma, monte)
 
 			//fmt.Println(command)
 
