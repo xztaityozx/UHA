@@ -80,6 +80,7 @@ func init() {
 	viper.SetDefault("TaskDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "task"))
 	viper.SetDefault("DoneDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "done"))
 	viper.SetDefault("SpreadSheet", SpreadSheet{})
+	viper.SetDefault("Simulation.SEED", 1)
 
 }
 

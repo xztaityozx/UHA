@@ -1,4 +1,4 @@
-// Copyright © 2018 xztaityozx
+//Copyright © 2018 xztaityozx
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,132 +51,413 @@ var runCmd = &cobra.Command{
 	Short: "シミュレーションを実行します",
 	Long:  `シミュレーションセットを実行します`,
 	Run: func(cmd *cobra.Command, args []string) {
-		count, _ := cmd.PersistentFlags().GetInt("number")
-		conti, _ := cmd.PersistentFlags().GetBool("continue")
+		num, _ := cmd.PersistentFlags().GetInt("number")
+		all, _ := cmd.PersistentFlags().GetBool("all")
 
 		msg := SlackMessage{
-			Failed:    0,
-			Succsess:  0,
-			StartTime: time.Now(),
+			StartTime:  time.Now(),
+			Failed:     -1,
+			Succsess:   -1,
+			SubMessage: "成功、失敗の個数はシミュレーションセットの個数です",
 		}
 
-		for i := 0; i < count; i++ {
-			t, f, err := readTask()
-			if err != nil {
-				log.Fatal(err)
-			}
-			if err := runTask(t); err != nil {
-				msg.Failed++
-				moveTo(ReserveRunDir, f, FailedRunDir)
-				if !conti {
-					PostFailed(config.SlackConfig, err)
-					log.Fatal(err)
-				}
-			} else {
-				msg.Succsess++
-				moveTo(ReserveRunDir, f, DoneRunDir)
-				log.Println("Finished ", f)
-			}
-		}
-		msg.FinishedTime = time.Now()
-		if err := Post(config.SlackConfig, msg); err != nil {
+		tasks, err := readRunTasks(num, all)
+		if err != nil {
+			PostFailed(config.SlackConfig, err)
 			log.Fatal(err)
 		}
+
+		summ, err := Run(&tasks)
+		if err != nil {
+			PostFailed(config.SlackConfig, err)
+			log.Fatal(err)
+		}
+
+		msg.FinishedTime = time.Now()
+		cnt := 0
+		for _, v := range summ {
+			if v.Status {
+				cnt++
+			}
+		}
+
+		msg.Succsess = cnt
+		msg.Failed = len(tasks) - cnt
+
+		Post(config.SlackConfig, msg)
 	},
 }
 
-func runTask(t Task) error {
-	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
-	s.Writer = os.Stderr
-	s.Suffix = " Running... "
-	s.Start()
+type RunTask struct {
+	Simulation Simulation
+	Addfile    string
+	SPI        []string
+	Dst        []string
+	ResultFile []string
+	Base       string
+	SEED       int
+	ACE        string
+	TaskFile   string
+}
 
-	var wg sync.WaitGroup
+// シミュレーションの書き出し先を作る
+func tryMkRunDstDir(srt *RunTask) error {
+	base := filepath.Join(srt.Simulation.DstDir, fmt.Sprintf("VtpVolt%.4f_VtnVolt%.4f", srt.Simulation.Vtp.Voltage, srt.Simulation.Vtn.Voltage))
+	srt.Base = base
+	for i, v := range srt.Simulation.Monte {
+		srt.Dst = append(srt.Dst, filepath.Join(base, fmt.Sprintf("SEED%03d/Monte%s", srt.SEED, v)))
+		rltdir := filepath.Join(base, fmt.Sprintf("SEED%03d/Result/", srt.SEED))
+		srt.ResultFile = append(srt.ResultFile, filepath.Join(rltdir, fmt.Sprintf("%s.csv", v)))
 
-	flag := false
-	cnt := 0
-	size := len(t.Simulation.Monte)
+		// Directory作る
+		if err := tryMkdir(srt.Dst[i]); err != nil {
+			return err
+		}
 
-	outDir := filepath.Join(t.Simulation.DstDir, fmt.Sprintf("Vtn%.4fVtp%.4f/Sigma%.4f", t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma, t.Simulation.Vtn.Sigma))
-	if err := tryMkdir(outDir); err != nil {
+		if err := tryMkdir(rltdir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+//Run用のAddfileを作る
+func tryMkRunAddfile(srt *RunTask) error {
+	dir := filepath.Join(srt.Base, "Addfiles")
+	if err := tryMkdir(dir); err != nil {
 		return err
 	}
 
-	for _, monte := range t.Simulation.Monte {
-		wg.Add(1)
-		cnt++
+	f := filepath.Join(dir, fmt.Sprintf("RunAddfileSEED%03d.txt", srt.SEED))
+	srt.Addfile = f
 
-		go func(monte string, cnt int) {
-			defer wg.Done()
-			dst := filepath.Join(t.Simulation.DstDir, monte)
-			tryMkdir(dst)
-			// ファイルのコピー
-			//spi
-			spi, re := getSPIScript(t.Simulation, monte, "addfile.txt")
-			if re != nil {
-				log.Println(re)
-				flag = true
-				return
-			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%s_%.4f_%.4finput.spi", monte, t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma)), spi, 0644); err != nil {
-				log.Println(err)
-				flag = true
-				return
-			}
-			//ace
-			ace := getACEScript(t.Simulation.Signal, t.Simulation.Range)
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, "extract.ace"), ace, 0644); err != nil {
-				log.Println(err)
-				flag = true
-				return
-			}
-
-			//resultMap
-			rmap, rmaperr := ioutil.ReadFile(filepath.Join(SelfPath, "templates", "resultsMap.xml"))
-			if rmaperr != nil {
-				log.Println(rmaperr)
-				flag = true
-				return
-			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, monte, "resultsMap.xml"), rmap, 0644); err != nil {
-				log.Println(err)
-				flag = true
-				return
-			}
-			//result
-			res, reserr := ioutil.ReadFile(filepath.Join(SelfPath, "templates", monte))
-			if reserr != nil {
-				log.Println(reserr)
-				flag = true
-				return
-			}
-			if err := ioutil.WriteFile(filepath.Join(t.Simulation.DstDir, monte, "results.xml"), res, 0644); err != nil {
-				log.Println(err)
-				flag = true
-				return
-			}
-
-			command := fmt.Sprintf("cd %s &&\nhspice -hpp -mt 4 -i %s -o ./hspice &> ./hspice.log &&\nwv -k -ace_no_gui ../extract.ace &> ./wv.log &&\ncat store.csv | sed '/^#/d;1,1d' | awk -F, '{print $2}' | xargs -n3 > ../Vtn%.4fVtp%.4f/Sigma%.4f/%s.csv\n", dst, filepath.Join(t.Simulation.SimDir, fmt.Sprintf("%s_%.4f_%.4finput.spi", monte, t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma)), t.Simulation.Vtn.Sigma, t.Simulation.Vtp.Sigma, t.Simulation.Vtn.Sigma, monte)
-
-			//fmt.Println(command)
-
-			c := exec.Command("bash", "-c", command)
-
-			err := c.Run()
-			flag = flag || (err != nil)
-			log.Print("Finished (", cnt, "/", size, ")")
-
-		}(monte, cnt)
+	var addfile string
+	src := filepath.Join(ConfigDir, "addfile.txt")
+	if tmplt, err := ioutil.ReadFile(src); err != nil {
+		return err
+	} else {
+		addfile = fmt.Sprintf(string(tmplt), srt.SEED)
 	}
+
+	return ioutil.WriteFile(f, []byte(addfile), 0644)
+}
+
+// Run用のSPIを作る
+func tryMkRunSPI(srt *RunTask) error {
+
+	for _, v := range srt.Simulation.Monte {
+		// SPIの名前、長すぎ
+		f := filepath.Join(srt.Simulation.SimDir, fmt.Sprintf("VtpVolt%.4f_VtnVolt%.4f_SEED%03d_Monte%s.spi",
+			srt.Simulation.Vtp.Voltage,
+			srt.Simulation.Vtn.Voltage,
+			srt.SEED,
+			v))
+
+		srt.SPI = append(srt.SPI, f)
+
+		// 書き込み
+		if spi, err := getSPIScript(srt.Simulation, v, srt.Addfile); err != nil {
+			return err
+		} else {
+			if e := ioutil.WriteFile(f, spi, 0644); e != nil {
+				return e
+			}
+		}
+	}
+	return nil
+}
+
+// XMLをコピーする
+func tryCopyRunXmls(srt RunTask) error {
+	for i, v := range srt.Dst {
+		// resultsMap.xml
+		{
+			src := filepath.Join(SelfPath, "templates", "resultsMap.xml")
+			dst := filepath.Join(v, "resultsMap.xml")
+			if res, err := ioutil.ReadFile(src); err != nil {
+				return err
+			} else {
+				if e := ioutil.WriteFile(dst, res, 0644); e != nil {
+					return e
+				}
+			}
+		}
+		// results.xml
+		{
+			src := filepath.Join(SelfPath, "templates", srt.Simulation.Monte[i])
+			dst := filepath.Join(v, "results.xml")
+			if res, err := ioutil.ReadFile(src); err != nil {
+				return err
+			} else {
+				if e := ioutil.WriteFile(dst, res, 0644); e != nil {
+					return e
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// ごみ処理
+func removeRunGarbage(srt RunTask) error {
+	// SPI
+	for _, v := range srt.SPI {
+		if err := os.Remove(v); err != nil {
+			return err
+		}
+	}
+
+	// Dst
+	for _, v := range srt.Dst {
+		if err := os.RemoveAll(v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ACEを生成して書き込む
+func tryMkRunACE(srt *RunTask) error {
+	f := filepath.Join(srt.Base, "extract.ace")
+	srt.ACE = f
+	ace := getACEScript(srt.Simulation.Signal, srt.Simulation.Range)
+
+	return ioutil.WriteFile(f, ace, 0644)
+}
+
+// シミュレーションコマンドを生成する
+func mkRunCommand(srt RunTask) ([]string, error) {
+
+	if len(srt.Simulation.Monte) == 0 {
+		return []string{}, errors.New("タスクが不正です(Monteが0個です)")
+	}
+
+	var rt []string
+	for i, _ := range srt.Simulation.Monte {
+		dst := srt.Dst[i]
+		spi := srt.SPI[i]
+
+		command := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui", dst, spi)
+		rt = append(rt, command)
+	}
+
+	return rt, nil
+}
+
+// ファイルからタスクを解釈する
+func MakeRunTask(f string) (RunTask, error) {
+	var s Simulation
+	b, err := ioutil.ReadFile(f)
+	if err != nil {
+		return RunTask{}, err
+	}
+
+	if err := json.Unmarshal(b, &s); err != nil {
+		return RunTask{}, err
+	}
+
+	var rt RunTask = RunTask{
+		Simulation: s,
+		SEED:       s.SEED,
+		TaskFile:   f,
+	}
+	return rt, nil
+}
+
+// Reserveからnum個または全部を読み出す
+func readRunTasks(num int, all bool) ([]RunTask, error) {
+	files, err := ioutil.ReadDir(ReserveRunDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// numが存在する個数以上、もしくはallが有効なら全部を指定する
+	if num > len(files) || all {
+		num = len(files)
+	}
+
+	if num == 0 {
+		return nil, errors.New("タスクファイルがありません")
+	}
+
+	var rt []RunTask
+
+	for i, v := range files {
+		if v.IsDir() {
+			continue
+		}
+		res, err := MakeRunTask(filepath.Join(ReserveRunDir, v.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		rt = append(rt, res)
+		if i == num {
+			break
+		}
+	}
+
+	return rt, nil
+}
+
+// Runする
+func Run(tasks *[]RunTask) ([]SRunSummary, error) {
+	var rt []SRunSummary
+	for _, task := range *tasks {
+		res, err := run(task)
+		if err != nil {
+			// 継続する
+			if ContinueWhenFaild {
+				log.Println(err)
+				continue
+			}
+			return nil, err
+		}
+		rt = append(rt, res)
+	}
+
+	return rt, nil
+
+}
+
+func run(task RunTask) (SRunSummary, error) {
+	var summary SRunSummary = SRunSummary{
+		Name: fmt.Sprintf("VtpVolt:%.4f_VtnVolt:%.4f Sigma:%.4f SEED:%03d",
+			task.Simulation.Vtn.Voltage,
+			task.Simulation.Vtp.Voltage,
+			task.Simulation.Vtn.Sigma,
+			task.SEED),
+		StartTime: time.Now(),
+		Status:    false,
+	}
+	// ディレクトリ作る
+	if err := tryMkRunDstDir(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// ACE
+	if err := tryMkRunACE(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// SPI
+	if err := tryMkRunSPI(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// Addfile
+	if err := tryMkRunAddfile(&task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// XMLs
+	if err := tryCopyRunXmls(task); err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	// コマンド生成
+	commands, err := mkRunCommand(task)
+	if err != nil {
+		summary.FinishTime = time.Now()
+		return summary, err
+	}
+
+	log.Println("Start Simulation ", task.TaskFile)
+	// spinner
+	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
+	spin.Suffix = "Running... "
+	spin.FinalMSG = "Simulation Set had finished!!\n"
+	spin.Start()
+	defer spin.Stop()
+
+	// waitgroup
+	var wg sync.WaitGroup
+
+	// シミュレーション開始
+	for i, command := range commands {
+		go func(command string, cnt int, l int) {
+			wg.Add(1)
+			defer wg.Done()
+			out, err := exec.Command("bash", "-c", command).CombinedOutput()
+			if err != nil {
+				summary.FinishTime = time.Now()
+				if ContinueWhenFaild {
+					log.Println(string(out))
+					return
+				}
+				log.Fatal(string(out))
+			}
+
+			log.Printf("Simulation finished(%d/%d)\n", i, l)
+
+			if err := ExtractFromStoreCSV(task.Dst[i], task.ResultFile[i]); err != nil {
+				summary.FinishTime = time.Now()
+				if ContinueWhenFaild {
+					log.Println(err)
+					return
+				}
+				log.Fatal(err)
+			}
+
+			log.Printf("Extract Complete(%d/%d)\n", i, l)
+
+		}(command, i, len(commands))
+	}
+
 	wg.Wait()
 
-	s.Stop()
-	s.FinalMSG = "simulation has finished"
+	summary.Status = true
+	summary.FinishTime = time.Now()
 
-	if flag {
-		return errors.New("simulation set has failed")
+	return summary, nil
+
+}
+
+// Store.csvからファイルに書き出す
+func ExtractFromStoreCSV(SrcDir string, DstFile string) error {
+	src := filepath.Join(SrcDir, "store.csv")
+	dst := DstFile
+
+	b, err := ioutil.ReadFile(src)
+	if err != nil {
+		return err
 	}
 
+	origin := strings.Split(string(b), "\n")
+	var store []string
+	// 整形1
+	for _, line := range origin {
+		// #で始まる行とTIME,SIGNAL行を飛ばす
+		if len(line) == 0 || line[0] == '#' || line[0] == 'T' {
+			continue
+		}
+
+		// 2カラム目を取り出す
+		t := strings.Split(strings.Replace(line, " ", "", -1), ",")
+		store = append(store, t[1])
+	}
+	if len(store)%3 != 0 {
+		return errors.New(fmt.Sprintf("Store.csvが不正です(要素の数が合いません) : %s", src))
+	}
+
+	// 3行を1行にする
+	var result []string
+	for i := 0; i < len(store); i += 3 {
+		result = append(result, fmt.Sprintf("%s %s %s", store[i], store[i+1], store[i+2]))
+	}
+
+	// 連結
+	text := strings.Join(result, "\n")
+
+	if err := ioutil.WriteFile(dst, []byte(text), 0644); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -197,96 +479,6 @@ func getSPIScript(s Simulation, monte string, addfile string) ([]byte, error) {
 	tmplt := string(b)
 	return []byte(fmt.Sprintf(tmplt, s.Vtn.Voltage, s.Vtn.Sigma, s.Vtn.Deviation,
 		s.Vtp.Voltage, s.Vtp.Sigma, s.Vtp.Deviation, addfile, monte)), nil
-}
-
-func readTask() (Task, string, error) {
-	//p := config.TaskDir
-
-	// リスト取得
-	files, err := ioutil.ReadDir(ReserveRunDir)
-	if err != nil {
-		return Task{}, "", err
-	}
-
-	if len(files) == 0 {
-		return Task{}, "", errors.New("タスクがありません")
-	}
-
-	f := filepath.Join(ReserveRunDir, files[0].Name())
-
-	//実行と移動
-	b, err := ioutil.ReadFile(f)
-	if err != nil {
-		return Task{}, "", err
-	}
-
-	var task Task
-	err = json.Unmarshal(b, &task)
-
-	if err != nil {
-		moveTo(ReserveRunDir, files[0].Name(), FAILED)
-		return Task{}, "", err
-	}
-
-	return task, files[0].Name(), nil
-}
-
-type Pair struct {
-	Task Task
-	Path string
-}
-
-func readAllTask() []Pair {
-	//p := config.TaskDir
-
-	files, err := ioutil.ReadDir(ReserveRunDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var rt []Pair
-
-	for _, v := range files {
-		f := filepath.Join(ReserveRunDir, v.Name())
-		b, err := ioutil.ReadFile(f)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var t Task
-		if err := json.Unmarshal(b, &t); err != nil {
-			log.Fatal(err)
-		}
-
-		if err != nil {
-			moveTo(ReserveRunDir, v.Name(), FAILED)
-			log.Println("不正確なtaskファイルでした : ", v.Name())
-		}
-
-		rt = append(rt, Pair{Path: v.Name(), Task: t})
-	}
-
-	return rt
-}
-
-func runAllTask(conti bool) error {
-	tasks := readAllTask()
-
-	for _, v := range tasks {
-		t := v.Task
-		p := v.Path
-
-		if err := runTask(t); err != nil {
-			moveTo(ReserveRunDir, p, FailedRunDir)
-			if !conti {
-				return errors.New("失敗したの終了します")
-			}
-		} else {
-			moveTo(ReserveRunDir, p, DoneRunDir)
-			log.Println("Finished ", p)
-		}
-	}
-	return nil
 }
 
 func tryMkdir(p string) error {
@@ -311,11 +503,13 @@ func moveTo(from string, f string, dir string) {
 	log.Print("Move to ", dst)
 }
 
+var ContinueWhenFaild bool
+
 func init() {
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.PersistentFlags().IntP("number", "n", 1, "実行するシミュレーションセットの個数です")
-	runCmd.PersistentFlags().BoolP("continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
+	runCmd.PersistentFlags().BoolVarP(&ContinueWhenFaild, "continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
 	runCmd.PersistentFlags().Bool("all", false, "全部実行します")
 	runCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
 }

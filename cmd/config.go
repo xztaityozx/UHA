@@ -25,6 +25,7 @@ type Simulation struct {
 	DstDir string
 	Vtp    Node
 	Vtn    Node
+	SEED   int
 }
 
 type SpreadSheet struct {

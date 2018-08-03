@@ -131,6 +131,12 @@ func interactive(t Task) Task {
 	//Signal
 	t.Simulation.Signal = getValue(fmt.Sprintf("プロットしたい信号線名です(default %s)\n", t.Simulation.Signal), t.Simulation.Signal)
 
+	//SEED
+	seed := getValue(fmt.Sprintf("SEED値です(default : %d)\n", t.Simulation.SEED), string(t.Simulation.SEED))
+	if len(seed) != 0 {
+		t.Simulation.SEED, _ = strconv.Atoi(seed)
+	}
+
 	return t
 }
 
