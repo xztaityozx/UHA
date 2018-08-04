@@ -28,10 +28,10 @@ import (
 
 var Version UHAVersion = UHAVersion{
 	Major:    1,
-	Minor:    5,
-	Build:    56,
-	Revision: 8,
-	Status:   "Beta",
+	Minor:    6,
+	Build:    57,
+	Revision: 0,
+	Status:   "Stable",
 	Date:     "2018/08/04",
 }
 
