@@ -64,15 +64,6 @@ func upgrade(branch string) error {
 		log.Fatal(string(b))
 	}
 
-	target := exec.Command("git", "checkout", branch)
-	if b, err := target.CombinedOutput(); err != nil {
-		log.Fatal(string(b))
-	}
-
-	if b, err := git.CombinedOutput(); err != nil {
-		log.Fatal(string(b))
-	}
-
 	get := exec.Command("go", "get")
 	if b, err := get.CombinedOutput(); err != nil {
 		log.Fatal(string(b))
@@ -83,11 +74,10 @@ func upgrade(branch string) error {
 		log.Fatal(string(b))
 	}
 
-	log.Println("\n\033[1;32mUpgraded UHA\033[0;39m")
+	log.Println("\033[1;32mUpgraded UHA\033[0;39m")
 	return nil
 }
 
 func init() {
 	rootCmd.AddCommand(upgradeCmd)
-	upgradeCmd.PersistentFlags().StringP("branch", "b", "master", "Pullしてくるbranchを指定します")
 }
