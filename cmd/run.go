@@ -357,14 +357,14 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
-	// SPI
-	if err := tryMkRunSPI(&task); err != nil {
+	// Addfile
+	if err := tryMkRunAddfile(&task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
 
-	// Addfile
-	if err := tryMkRunAddfile(&task); err != nil {
+	// SPI
+	if err := tryMkRunSPI(&task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
