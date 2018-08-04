@@ -404,10 +404,9 @@ func run(task RunTask) (SRunSummary, error) {
 	// シミュレーション開始
 	for i, command := range commands {
 		wg.Add(1)
+		log.Println(com)
 		go func(com string, cnt int, l int) {
 			defer wg.Done()
-
-			log.Println(com)
 
 			c := exec.Command("bash", "-c", com)
 			err := c.Run()
