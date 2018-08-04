@@ -410,10 +410,11 @@ func run(task RunTask) (SRunSummary, error) {
 			err := c.Run()
 			if err != nil {
 				summary.FinishTime = time.Now()
-				if ContinueWhenFaild {
-					log.Println(err)
-					return
-				}
+				//if ContinueWhenFaild {
+				//log.Println(err)
+				//} else {
+				//log.Fatal(err)
+				//}
 				log.Fatal(err)
 			}
 
