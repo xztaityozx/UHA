@@ -339,6 +339,8 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
+	log.Println(task.Base)
+
 	// ACE
 	if err := tryMkRunACE(&task); err != nil {
 		summary.FinishTime = time.Now()
@@ -414,12 +416,14 @@ func run(task RunTask) (SRunSummary, error) {
 
 	wg.Wait()
 
-	if GargabeCollect {
-		removeRunGarbage(task)
-	}
-
 	summary.Status = true
 	summary.FinishTime = time.Now()
+
+	if GargabeCollect {
+		if err := removeRunGarbage(task); err != nil {
+			log.Println("後片付けに失敗しました")
+		}
+	}
 
 	return summary, nil
 
