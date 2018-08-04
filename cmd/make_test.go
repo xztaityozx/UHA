@@ -11,6 +11,7 @@ import (
 func TestAllMake(t *testing.T) {
 	home := os.Getenv("HOME")
 	ReserveRunDir = filepath.Join(home, ".config", "UHA", "task", "run", RESERVE)
+	tryMkdirSuppress(ReserveRunDir)
 	var sim Simulation = Simulation{
 		DstDir: filepath.Join(home, "WorkSpace", "Dst"),
 		SimDir: filepath.Join(home, "WorkSpace", "Sim"),
