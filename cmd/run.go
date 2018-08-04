@@ -424,9 +424,9 @@ func run(task RunTask) (SRunSummary, error) {
 				summary.FinishTime = time.Now()
 				if ContinueWhenFaild {
 					log.Println(err)
-					return
+				} else {
+					log.Fatal(err)
 				}
-				log.Fatal(err)
 			}
 
 			log.Printf("Extract Complete(%d/%d)\n", cnt+1, l)
@@ -524,7 +524,7 @@ func tryMkdir(p string) error {
 func sendTaskFile(src string, status bool) error {
 	base := filepath.Base(src)
 	dst := filepath.Join(DoneRunDir, base)
-	if status {
+	if !status {
 		dst = filepath.Join(FailedRunDir, base)
 	}
 
