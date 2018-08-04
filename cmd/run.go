@@ -403,10 +403,11 @@ func run(task RunTask) (SRunSummary, error) {
 
 	// シミュレーション開始
 	for i, command := range commands {
-		go func(command string, cnt int, l int) {
+		go func(com string, cnt int, l int) {
 			wg.Add(1)
 			defer wg.Done()
-			err := exec.Command("bash", "-c", command).Run()
+			c := exec.Command("bash", "-c", com)
+			err := c.Run()
 			if err != nil {
 				summary.FinishTime = time.Now()
 				if ContinueWhenFaild {
