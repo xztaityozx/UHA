@@ -240,7 +240,7 @@ func mkRunCommand(srt RunTask) ([]string, error) {
 		dst := srt.Dst[i]
 		spi := srt.SPI[i]
 
-		command := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s", dst, spi, srt.ACE)
+		command := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s &> wv.log", dst, spi, srt.ACE)
 		rt = append(rt, command)
 	}
 
@@ -389,8 +389,6 @@ func run(task RunTask) (SRunSummary, error) {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
-
-	log.Fatal(commands[0])
 
 	log.Println("Start Simulation ", task.TaskFile)
 	// spinner
