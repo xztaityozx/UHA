@@ -404,7 +404,7 @@ func run(task RunTask) (SRunSummary, error) {
 	// シミュレーション開始
 	for i, command := range commands {
 		wg.Add(1)
-		log.Println(com)
+		log.Println(command)
 		go func(com string, cnt int, l int) {
 			defer wg.Done()
 
