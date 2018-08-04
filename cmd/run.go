@@ -406,6 +406,9 @@ func run(task RunTask) (SRunSummary, error) {
 		wg.Add(1)
 		go func(com string, cnt int, l int) {
 			defer wg.Done()
+
+			log.Println(com)
+
 			c := exec.Command("bash", "-c", com)
 			err := c.Run()
 			if err != nil {
