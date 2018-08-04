@@ -294,6 +294,12 @@ TIME ,Signal
 			if res.TaskFile != f {
 				t.Fatal("Unexpected Result TaskFile : ", res.TaskFile, "\nexpect : ", f)
 			}
+			if res.Simulation.SimDir != rt.Simulation.SimDir {
+				t.Fatal("Unexpected Result SimDir : ", res.Simulation.SimDir)
+			}
+			if res.Simulation.Signal != rt.Simulation.Signal {
+				t.Fatal("Unexpected Result Signal : ", res.Simulation.Signal)
+			}
 		}
 	})
 
