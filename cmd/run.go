@@ -123,10 +123,12 @@ func tryMkRunDstDir(srt *RunTask) error {
 	return nil
 }
 
+
 //Run用のAddfileを作る
 func tryMkRunAddfile(srt *RunTask) error {
 	dir := filepath.Join(srt.Base, "Addfiles")
 	if err := tryMkdir(dir); err != nil {
+
 		return err
 	}
 
@@ -141,8 +143,10 @@ func tryMkRunAddfile(srt *RunTask) error {
 		addfile = fmt.Sprintf(string(tmplt), srt.SEED)
 	}
 
+
 	return ioutil.WriteFile(f, []byte(addfile), 0644)
 }
+
 
 // Run用のSPIを作る
 func tryMkRunSPI(srt *RunTask) error {

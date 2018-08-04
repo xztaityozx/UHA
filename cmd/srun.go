@@ -337,7 +337,7 @@ func readRangeSEEDTask(start int) ([]RangeSEEDTask, string, error) {
 }
 
 func writeRangeSEEDSPI(rst *RangeSEEDTask) error {
-	f := filepath.Join(rst.Sim, fmt.Sprintf("Vtn%.4fVtp%.4fMonte%s_Sigma%.4f_SEED%03d.spi", rst.Vtn.Sigma, rst.Vtp.Sigma, rst.Monte, rst.Sigma, rst.SEED))
+	f := filepath.Join(rst.Sim, fmt.Sprintf("Vtn%.4fVtp%.4fMonte%s_Sigma%.4f_SEED%03d.spi", rst.Vtn.Voltage, rst.Vtp.Voltage, rst.Monte, rst.Sigma, rst.SEED))
 
 	// SPI文字列を作る
 	p := filepath.Join(ConfigDir, "spitemplate.spi")
@@ -395,7 +395,7 @@ func writeRangeSEEAddfile(rst *RangeSEEDTask) error {
 
 // このシミュレーションの結果を書き出すディレクトリを作る
 func tryMkRangeSEEDDstDir(rst *RangeSEEDTask) error {
-	ts := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Vtn%.4fVtp%.4f_Sigma%.4f_Monte%s", rst.Vtn.Sigma, rst.Vtp.Sigma, rst.Sigma, rst.Monte))
+	ts := filepath.Join(rst.BaseDir, fmt.Sprintf("RangeSEED_Vtn%.4fVtp%.4f_Sigma%.4f_Monte%s", rst.Vtn.Voltage, rst.Vtp.Voltage, rst.Sigma, rst.Monte))
 	p := filepath.Join(ts, fmt.Sprintf("SEED%03d", rst.SEED))
 	if err := tryMkdirSuppress(p); err != nil {
 		return err
