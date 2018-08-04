@@ -349,7 +349,7 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
-	log.Println(task.Base)
+	log.Println("MkDir :", task.Base)
 
 	// ACE
 	if err := tryMkRunACE(&task); err != nil {
@@ -357,11 +357,15 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
+	log.Println("Write ACE to ", task.ACE)
+
 	// Addfile
 	if err := tryMkRunAddfile(&task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
+
+	log.Println("Write Addfile to ", task.Addfile)
 
 	// SPI
 	if err := tryMkRunSPI(&task); err != nil {
@@ -369,11 +373,15 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
+	log.Println("Write SPI to ", task.SPI[0])
+
 	// XMLs
 	if err := tryCopyRunXmls(task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
+
+	log.Println("Write Xmls")
 
 	// コマンド生成
 	commands, err := mkRunCommand(task)
@@ -398,14 +406,14 @@ func run(task RunTask) (SRunSummary, error) {
 		go func(command string, cnt int, l int) {
 			wg.Add(1)
 			defer wg.Done()
-			out, err := exec.Command("bash", "-c", command).CombinedOutput()
+			err := exec.Command("bash", "-c", command).Run()
 			if err != nil {
 				summary.FinishTime = time.Now()
 				if ContinueWhenFaild {
-					log.Println(string(out))
+					log.Println(err)
 					return
 				}
-				log.Fatal(string(out))
+				log.Fatal(err)
 			}
 
 			log.Printf("Simulation finished(%d/%d)\n", i, l)
