@@ -240,7 +240,7 @@ func mkRunCommand(srt RunTask) ([]string, error) {
 		dst := srt.Dst[i]
 		spi := srt.SPI[i]
 
-		command := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui", dst, spi)
+		command := fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s", dst, spi, srt.ACE)
 		rt = append(rt, command)
 	}
 
