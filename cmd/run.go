@@ -259,6 +259,8 @@ func MakeRunTask(f string) (RunTask, error) {
 		return RunTask{}, err
 	}
 
+	log.Println(s)
+
 	var rt RunTask = RunTask{
 		Simulation: s,
 		SEED:       s.SEED,
@@ -290,7 +292,7 @@ func readRunTasks(num int, all bool) ([]RunTask, error) {
 			continue
 		}
 		res, err := MakeRunTask(filepath.Join(ReserveRunDir, v.Name()))
-		log.Println(res)
+		//log.Println(res)
 		if err != nil {
 			return nil, err
 		}
