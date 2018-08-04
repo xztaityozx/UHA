@@ -416,9 +416,9 @@ func run(task RunTask) (SRunSummary, error) {
 				log.Fatal(err)
 			}
 
-			log.Printf("Simulation finished(%d/%d)\n", i, l)
+			log.Printf("Simulation finished(%d/%d)\n", cnt, l)
 
-			if err := ExtractFromStoreCSV(task.Dst[i], task.ResultFile[i]); err != nil {
+			if err := ExtractFromStoreCSV(task.Dst[cnt], task.ResultFile[cnt]); err != nil {
 				summary.FinishTime = time.Now()
 				if ContinueWhenFaild {
 					log.Println(err)
@@ -427,7 +427,7 @@ func run(task RunTask) (SRunSummary, error) {
 				log.Fatal(err)
 			}
 
-			log.Printf("Extract Complete(%d/%d)\n", i, l)
+			log.Printf("Extract Complete(%d/%d)\n", cnt, l)
 
 		}(command, i, len(commands))
 	}
