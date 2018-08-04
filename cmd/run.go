@@ -290,6 +290,7 @@ func readRunTasks(num int, all bool) ([]RunTask, error) {
 			continue
 		}
 		res, err := MakeRunTask(filepath.Join(ReserveRunDir, v.Name()))
+		log.Println(res)
 		if err != nil {
 			return nil, err
 		}
