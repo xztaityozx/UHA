@@ -404,7 +404,6 @@ func run(task RunTask) (SRunSummary, error) {
 	// シミュレーション開始
 	for i, command := range commands {
 		wg.Add(1)
-		log.Println(command)
 		go func(com string, cnt int, l int) {
 			defer wg.Done()
 
@@ -412,12 +411,11 @@ func run(task RunTask) (SRunSummary, error) {
 			err := c.Run()
 			if err != nil {
 				summary.FinishTime = time.Now()
-				//if ContinueWhenFaild {
-				//log.Println(err)
-				//} else {
-				//log.Fatal(err)
-				//}
-				//log.Fatal(err)
+				if ContinueWhenFaild {
+					log.Println(err)
+				} else {
+					log.Fatal(err)
+				}
 			}
 
 			log.Printf("Simulation finished(%d/%d)\n", cnt, l)
