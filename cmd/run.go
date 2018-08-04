@@ -390,6 +390,8 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
+	log.Fatal(commands[0])
+
 	log.Println("Start Simulation ", task.TaskFile)
 	// spinner
 	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
