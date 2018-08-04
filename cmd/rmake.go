@@ -125,7 +125,7 @@ func rmakeTask(list []string) error {
 		t.Simulation.Vtn.Sigma = sigma
 		t.Simulation.Vtp.Sigma = sigma
 
-		if err := writeTask(t); err != nil {
+		if _, err := writeTask(t.Simulation); err != nil {
 			return err
 		}
 	}

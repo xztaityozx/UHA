@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +33,7 @@ import (
 	"github.com/c-bata/go-prompt"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // makeCmd represents the make command
@@ -44,156 +45,117 @@ var makeCmd = &cobra.Command{
 
 Usage : UHA make`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var err error
-		skip, err = cmd.PersistentFlags().GetBool("default")
+		sim := config.Simulation
+
+		DstDir, _ := cmd.PersistentFlags().GetString("out")
+		if len(DstDir) != 0 {
+			sim.DstDir, _ = homedir.Expand(DstDir)
+		}
+
+		skip, _ := cmd.PersistentFlags().GetBool("default")
+		yes, _ := cmd.PersistentFlags().GetBool("yes")
+
+		if !skip {
+			interactive(&sim, yes)
+		}
+
+		f, err := writeTask(sim)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		Sigma, err = cmd.PersistentFlags().GetFloat64("sigma")
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Println("Write Task File to : ", f)
 
-		yes, err = cmd.PersistentFlags().GetBool("yes")
-		if err != nil {
-			log.Fatal(err)
-		}
-		makeTask()
 	},
 }
 
-var Sigma float64
-var skip bool
-var yes bool
+func interactive(sim *Simulation, yes bool) {
+	// Vtp
+	sim.Vtp.Voltage = getFloatVar("Vtpのしきい値電圧です", sim.Vtp.Voltage, "Vtp Volt")
+	sim.Vtp.Sigma = getFloatVar("Vtpのシグマです", sim.Vtp.Sigma, "Vtp Sigma")
+	sim.Vtp.Deviation = getFloatVar("Vtpの中央値です", sim.Vtp.Deviation, "Vtp Deviation")
+	// Vtn
+	sim.Vtn.Voltage = getFloatVar("Vtnのしきい値電圧です", sim.Vtn.Voltage, "Vtn Volt")
+	sim.Vtn.Sigma = getFloatVar("Vtnのシグマです", sim.Vtn.Sigma, "Vtn Sigma")
+	sim.Vtn.Deviation = getFloatVar("Vtnの中央値です", sim.Vtn.Deviation, "Vtn Deviation")
+	// Monte
+	sim.Monte = getStringSliceVar("モンテカルロの回数をカンマ区切りで入力します", sim.Monte, "Monte")
+	// Range
+	sim.Range.Start = getStringVar("プロットの開始時間です", sim.Range.Start, "Range Start")
+	sim.Range.Stop = getStringVar("プロットの終了時間です", sim.Range.Stop, "Range Stop")
+	sim.Range.Step = getStringVar("プロットの刻み幅です", sim.Range.Step, "Range Step")
+	// Signal
+	sim.Signal = getStringVar("プロットする信号線名です", sim.Signal, "Signal")
+	// Dst
+	sim.DstDir = getStringVar("結果が書き出される親ディレクトリです", sim.DstDir, "DstDir")
+	// Sim
+	sim.SimDir = getStringVar("netlistがあるディレクトリです", sim.SimDir, "SimDir")
+	// SEED
+	sim.SEED = getIntVar("SEED値です", sim.SEED, "SEED")
 
-func interactive(t Task) Task {
-	//Vtp
-	pv := getValue(fmt.Sprintf("Vtpのしきい値電圧です(default : %.4f)\n", t.Simulation.Vtp.Voltage), fmt.Sprint(t.Simulation.Vtp.Voltage))
-	var pe error
-	t.Simulation.Vtp.Voltage, pe = strconv.ParseFloat(pv, 64)
-	if pe != nil {
-		log.Fatal(pe)
-	}
-	ps := getValue(fmt.Sprintf("Vtpのシグマです(default : %.4f)\n", t.Simulation.Vtp.Sigma), fmt.Sprint(t.Simulation.Vtp.Sigma))
-	t.Simulation.Vtp.Sigma, pe = strconv.ParseFloat(ps, 64)
-	if pe != nil {
-		log.Fatal(pe)
-	}
-
-	pd := getValue(fmt.Sprintf("Vtpの中央値です(default : %.4f)\n", t.Simulation.Vtp.Deviation), fmt.Sprint(t.Simulation.Vtp.Deviation))
-	t.Simulation.Vtp.Deviation, pe = strconv.ParseFloat(pd, 64)
-	if pe != nil {
-		log.Fatal(pe)
-	}
-	//Vtn
-	nv := getValue(fmt.Sprintf("Vtnのしきい値電圧です(default : %.4f)\n", t.Simulation.Vtn.Voltage), fmt.Sprint(t.Simulation.Vtn.Voltage))
-	var ne error
-	t.Simulation.Vtn.Voltage, ne = strconv.ParseFloat(nv, 64)
-	if ne != nil {
-		log.Fatal(ne)
-	}
-	ns := getValue(fmt.Sprintf("Vtnのシグマです(default : %.4f)\n", t.Simulation.Vtn.Sigma), fmt.Sprint(t.Simulation.Vtn.Sigma))
-	t.Simulation.Vtn.Sigma, ne = strconv.ParseFloat(ns, 64)
-	if ne != nil {
-		log.Fatal(ne)
-	}
-
-	nd := getValue(fmt.Sprintf("Vtnの中央値です(default : %.4f)\n", t.Simulation.Vtn.Deviation), fmt.Sprint(t.Simulation.Vtn.Deviation))
-	t.Simulation.Vtn.Deviation, ne = strconv.ParseFloat(nd, 64)
-	if ne != nil {
-		log.Fatal(ne)
-	}
-
-	//Monte
-	fmt.Printf("モンテカルロの回数をカンマ区切りで入力してください(default : %v)\n", t.Simulation.Monte)
-	if res := prompt.Input(">>> ", completer, prompt.OptionTitle("UHA make Task")); len(res) != 0 {
-		t.Simulation.Monte = strings.Split(res, ",")
-	}
-
-	//Range
-	t.Simulation.Range.Start = getValue(fmt.Sprintf("書き出しを開始する時間です(default %s)\n", t.Simulation.Range.Start), t.Simulation.Range.Start)
-	t.Simulation.Range.Stop = getValue(fmt.Sprintf("書き出しを終了する時間です(default %s)\n", t.Simulation.Range.Stop), t.Simulation.Range.Stop)
-	t.Simulation.Range.Step = getValue(fmt.Sprintf("書き出しの刻み幅です(default %s)\n", t.Simulation.Range.Step), t.Simulation.Range.Step)
-
-	//DstDir
-	t.Simulation.DstDir = getValue(fmt.Sprintf("結果が書き出されるディレクトリです(default %s)\n", t.Simulation.DstDir), t.Simulation.DstDir)
-	//SimDir
-	t.Simulation.SimDir = getValue(fmt.Sprintf("netlistが置かれるべきディレクトリです(default %s)\n", t.Simulation.SimDir), t.Simulation.SimDir)
-
-	//LibDir
-	//t.Simulation.LibDir = getValue(fmt.Sprintf("ライブラリのディレクトリです(default %s)\n", t.Simulation.LibDir), t.Simulation.LibDir)
-	//AddFile
-	//t.Simulation.AddFile = getValue(fmt.Sprintf("addfileへのパスです(default %s)\n", t.Simulation.AddFile), t.Simulation.AddFile)
-	//ModelFile
-	//t.Simulation.ModelFile = getValue(fmt.Sprintf("modelfileへのパスです(default %s)\n", t.Simulation.ModelFile), t.Simulation.ModelFile)
-
-	//Signal
-	t.Simulation.Signal = getValue(fmt.Sprintf("プロットしたい信号線名です(default %s)\n", t.Simulation.Signal), t.Simulation.Signal)
-
-	//SEED
-	seed := getValue(fmt.Sprintf("SEED値です(default : %d)\n", t.Simulation.SEED), string(t.Simulation.SEED))
-	if len(seed) != 0 {
-		t.Simulation.SEED, _ = strconv.Atoi(seed)
-	}
-
-	return t
-}
-
-func makeTask() {
-	t := Task{
-		Simulation: config.Simulation,
-	}
-
-	if Sigma != 0.0 {
-		t.Simulation.Vtn.Sigma = Sigma
-		t.Simulation.Vtp.Sigma = Sigma
-	}
-
-	if !skip {
-		t = interactive(t)
-	}
+	fmt.Println("Vtp : ", sim.Vtp)
+	fmt.Println("Vtn : ", sim.Vtn)
+	fmt.Println("Range : ", sim.Range)
+	fmt.Println("Monte : ", sim.Monte)
+	fmt.Println("SEED : ", sim.SEED)
+	fmt.Println("DstDir : ", sim.DstDir)
+	fmt.Println("SimDir : ", sim.SimDir)
 
 	if !yes {
-
-		fmt.Printf("Vtn:AGAUSS(%.4f,%.4f,%.4f)\nVtp:AGAUSS(%.4f,%.4f,%.4f)\n", t.Simulation.Vtn.Voltage, t.Simulation.Vtn.Sigma, t.Simulation.Vtn.Deviation, t.Simulation.Vtp.Voltage, t.Simulation.Vtp.Sigma, t.Simulation.Vtp.Deviation)
-		fmt.Printf("Monte:%v\n", t.Simulation.Monte)
-		fmt.Printf("Range:[Start,Stop,Step] : %v\nDstDir:%s\nSimDir:%s\n", t.Simulation.Range, t.Simulation.DstDir, t.Simulation.SimDir)
-
-		fmt.Println("この設定でシミュレーションタスクを発行します(y/n)")
-		ans := prompt.Input(">>> ", completer, prompt.OptionTitle("UHA make Task Confirm"))
-		if ans != "Y" && ans != "y" {
-			log.Fatal("UHA make Task has canceled")
+		res := getStringVar("これでいいですか？", "no", "confirm")
+		if res != "yes" {
+			log.Fatal("中止しました")
 		}
-	}
-
-	if err := writeTask(t); err != nil {
-		log.Fatal(err)
 	}
 }
 
-func writeTask(t Task) error {
-	tryMkdir(ReserveRunDir)
+func writeTask(sim Simulation) (string, error) {
+	t := time.Now().Format("20060102150405")
+	detail := fmt.Sprintf("VtpVolt%.4f_VtnVolt%.4f_Sigma%.4f_Monte%s_%s.json",
+		sim.Vtp.Voltage,
+		sim.Vtn.Voltage,
+		sim.Vtn.Sigma,
+		sim.Monte[0],
+		sim.Monte[len(sim.Monte)-1])
 
-	// ~ resolve
-	t.Simulation.DstDir, _ = homedir.Expand(t.Simulation.DstDir)
-	t.Simulation.SimDir, _ = homedir.Expand(t.Simulation.SimDir)
-	//t.Simulation.AddFile, _ = homedir.Expand(t.Simulation.AddFile)
-	//t.Simulation.LibDir, _ = homedir.Expand(t.Simulation.LibDir)
-	//t.Simulation.ModelFile, _ = homedir.Expand(t.Simulation.ModelFile)
+	f := filepath.Join(ReserveRunDir, fmt.Sprintf("%s%s", t, detail))
 
-	j := path.Join(ReserveRunDir, fmt.Sprint(time.Now().Format("20060102150405"), "_sigma", t.Simulation.Vtn.Sigma, ".json"))
-	//f, err := os.OpenFile(j,os.O_CREATE|os.O_WRONLY,0644)
-	b, err := json.MarshalIndent(t, "", "    ")
+	b, err := json.MarshalIndent(sim, "", "    ")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if err := ioutil.WriteFile(j, b, 0644); err != nil {
-		return err
+	return f, ioutil.WriteFile(f, b, 0644)
+}
+
+func getStringVar(description string, def string, title string) string {
+	res := prompt.Input(fmt.Sprintf("%s(default : %s)\n>>> ", description, def), completer, prompt.OptionTitle(fmt.Sprintf("UHA make %s", title)))
+	if len(res) != 0 {
+		return res
 	}
-	log.Println("Write Task to", j)
-	return nil
+	return def
+}
+
+func getIntVar(description string, def int, title string) int {
+	res, err := strconv.Atoi(getStringVar(description, string(def), title))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return res
+}
+
+func getFloatVar(description string, def float64, title string) float64 {
+	res, err := strconv.ParseFloat(getStringVar(description, fmt.Sprint(def), title), 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return res
+}
+
+func getStringSliceVar(description string, def []string, title string) []string {
+	return strings.Split(getStringVar(description, strings.Join(def, ","), title), ",")
 }
 
 func completer(in prompt.Document) []prompt.Suggest {
@@ -201,19 +163,20 @@ func completer(in prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasSuffix(s, in.GetWordBeforeCursor(), true)
 }
 
-func getValue(ask string, def string) string {
-	fmt.Print(ask)
-
-	res := prompt.Input(">>> ", completer, prompt.OptionTitle("UHA make Task"))
-	if len(res) == 0 {
-		return def
-	}
-	return res
-}
-
 func init() {
 	rootCmd.AddCommand(makeCmd)
-	makeCmd.PersistentFlags().Float64("sigma", 0.0, "Vtp,VtnのSigmaを設定します")
+
+	makeCmd.PersistentFlags().Float64("sigma", 0, "Vtp,VtnのSigmaを設定します")
 	makeCmd.PersistentFlags().BoolP("default", "D", false, "設定ファイルをそのままタスクにします。オプションで値をしているとそちらが優先されます")
 	makeCmd.PersistentFlags().BoolP("yes", "y", false, "y/nをスキップします")
+	makeCmd.PersistentFlags().Float64P("VtpVoltage", "P", 0, "Vtpのしきい値電圧です")
+	makeCmd.PersistentFlags().Float64P("VtnVoltage", "N", 0, "Vtnのしきい値電圧です")
+	makeCmd.PersistentFlags().Int("SEED", 1, "SEED値です")
+	makeCmd.PersistentFlags().StringP("out", "o", "", "書き出し先です")
+
+	viper.BindPFlag("Simulation.Vtp.Voltage", makeCmd.PersistentFlags().Lookup("VtpVoltage"))
+	viper.BindPFlag("Simulation.Vtn.Voltage", makeCmd.PersistentFlags().Lookup("VtnVoltage"))
+	viper.BindPFlag("Simulation.Vtn.Sigma", makeCmd.PersistentFlags().Lookup("sigma"))
+	viper.BindPFlag("Simulation.Vtp.Sigma", makeCmd.PersistentFlags().Lookup("sigma"))
+	viper.BindPFlag("Simulation.SEED", makeCmd.PersistentFlags().Lookup("SEED"))
 }
