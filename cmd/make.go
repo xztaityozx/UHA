@@ -56,7 +56,21 @@ Usage : UHA make`,
 		yes, _ := cmd.PersistentFlags().GetBool("yes")
 
 		if !skip {
-			interactive(&sim, yes)
+			interactive(&sim)
+		}
+
+		fmt.Println("Vtp : ", sim.Vtp)
+		fmt.Println("Vtn : ", sim.Vtn)
+		fmt.Println("Range : ", sim.Range)
+		fmt.Println("Monte : ", sim.Monte)
+		fmt.Println("SEED : ", sim.SEED)
+		fmt.Println("DstDir : ", sim.DstDir)
+		fmt.Println("SimDir : ", sim.SimDir)
+		if !yes {
+			res := getStringVar("これでいいですか？(y/n)", "n", "confirm")
+			if res != "y" && res != "yes" {
+				log.Fatal("中止しました")
+			}
 		}
 
 		f, err := writeTask(sim)
@@ -69,7 +83,7 @@ Usage : UHA make`,
 	},
 }
 
-func interactive(sim *Simulation, yes bool) {
+func interactive(sim *Simulation) {
 	// Vtp
 	sim.Vtp.Voltage = getFloatVar("Vtpのしきい値電圧です", sim.Vtp.Voltage, "Vtp Volt")
 	sim.Vtp.Sigma = getFloatVar("Vtpのシグマです", sim.Vtp.Sigma, "Vtp Sigma")
@@ -93,20 +107,6 @@ func interactive(sim *Simulation, yes bool) {
 	// SEED
 	sim.SEED = getIntVar("SEED値です", sim.SEED, "SEED")
 
-	fmt.Println("Vtp : ", sim.Vtp)
-	fmt.Println("Vtn : ", sim.Vtn)
-	fmt.Println("Range : ", sim.Range)
-	fmt.Println("Monte : ", sim.Monte)
-	fmt.Println("SEED : ", sim.SEED)
-	fmt.Println("DstDir : ", sim.DstDir)
-	fmt.Println("SimDir : ", sim.SimDir)
-
-	if !yes {
-		res := getStringVar("これでいいですか？", "no", "confirm")
-		if res != "yes" {
-			log.Fatal("中止しました")
-		}
-	}
 }
 
 func writeTask(sim Simulation) (string, error) {
@@ -129,7 +129,8 @@ func writeTask(sim Simulation) (string, error) {
 }
 
 func getStringVar(description string, def string, title string) string {
-	res := prompt.Input(fmt.Sprintf("%s(default : %s)\n>>> ", description, def), completer, prompt.OptionTitle(fmt.Sprintf("UHA make %s", title)))
+	fmt.Printf("%s(default : %s)\n", description, def)
+	res := prompt.Input(">>> ", completer, prompt.OptionTitle(fmt.Sprintf("UHA make %s", title)))
 	if len(res) != 0 {
 		return res
 	}
