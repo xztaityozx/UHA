@@ -282,6 +282,8 @@ TIME ,Signal
 		f := filepath.Join(ConfigDir, "task", "run", RESERVE, "TEST.json")
 		ioutil.WriteFile(f, b, 0644)
 
+		log.Println(string(b))
+
 		if res, err := MakeRunTask(f); err != nil {
 			log.Fatal(err)
 		} else {
