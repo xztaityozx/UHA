@@ -81,6 +81,8 @@ var runCmd = &cobra.Command{
 			}
 		}
 
+		printSummary(&summ)
+
 		msg.Succsess = cnt
 		msg.Failed = len(tasks) - cnt
 
@@ -412,6 +414,10 @@ func run(task RunTask) (SRunSummary, error) {
 
 	wg.Wait()
 
+	if GargabeCollect {
+		removeRunGarbage(task)
+	}
+
 	summary.Status = true
 	summary.FinishTime = time.Now()
 
@@ -503,7 +509,7 @@ func moveTo(from string, f string, dir string) {
 	log.Print("Move to ", dst)
 }
 
-var ContinueWhenFaild bool
+var ContinueWhenFaild, GargabeCollect bool
 
 func init() {
 	rootCmd.AddCommand(runCmd)
@@ -512,4 +518,5 @@ func init() {
 	runCmd.PersistentFlags().BoolVarP(&ContinueWhenFaild, "continue", "C", false, "連続して実行する時、どれかがコケても次のシミュレーションを行います")
 	runCmd.PersistentFlags().Bool("all", false, "全部実行します")
 	runCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
+	runCmd.PersistentFlags().BoolVar(&GargabeCollect, "GC", false, "結果のCSV以外を削除します")
 }

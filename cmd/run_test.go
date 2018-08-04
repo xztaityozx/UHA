@@ -15,6 +15,7 @@ func TestAllRun(t *testing.T) {
 	ConfigDir = filepath.Join(home, ".config", "UHA")
 	SelfPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xztaityozx", "UHA")
 	ReserveRunDir = filepath.Join(ConfigDir, "task", "run", RESERVE)
+	tryMkdirSuppress(ReserveRunDir)
 
 	rt := RunTask{
 		Simulation: Simulation{
