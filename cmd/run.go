@@ -403,8 +403,8 @@ func run(task RunTask) (SRunSummary, error) {
 
 	// シミュレーション開始
 	for i, command := range commands {
+		wg.Add(1)
 		go func(com string, cnt int, l int) {
-			wg.Add(1)
 			defer wg.Done()
 			c := exec.Command("bash", "-c", com)
 			err := c.Run()
@@ -415,7 +415,7 @@ func run(task RunTask) (SRunSummary, error) {
 				//} else {
 				//log.Fatal(err)
 				//}
-				log.Fatal(err)
+				//log.Fatal(err)
 			}
 
 			log.Printf("Simulation finished(%d/%d)\n", cnt, l)
