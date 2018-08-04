@@ -320,6 +320,13 @@ func Run(tasks *[]RunTask) ([]SRunSummary, error) {
 			return nil, err
 		}
 		rt = append(rt, res)
+		if err := sendTaskFile(task.TaskFile, res.Status); err != nil {
+			if ContinueWhenFaild {
+				log.Println(err)
+			} else {
+				log.Fatal(err)
+			}
+		}
 	}
 
 	return rt, nil
@@ -501,6 +508,20 @@ func tryMkdir(p string) error {
 		}
 		log.Print("Mkdir : ", p)
 	}
+	return nil
+}
+
+func sendTaskFile(src string, status bool) error {
+	base := filepath.Base(src)
+	dst := filepath.Join(DoneRunDir, base)
+	if status {
+		dst = filepath.Join(FailedRunDir, base)
+	}
+
+	if err := os.Rename(src, dst); err != nil {
+		return err
+	}
+	log.Println("Move to ", dst)
 	return nil
 }
 
