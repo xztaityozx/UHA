@@ -71,9 +71,9 @@ func TestAllRun(t *testing.T) {
 		}
 
 		dstExpect := []string{
-			filepath.Join(baseExpect, "SEED001/Monte100"),
-			filepath.Join(baseExpect, "SEED001/Monte200"),
-			filepath.Join(baseExpect, "SEED001/Monte500"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Monte100"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Monte200"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Monte500"),
 		}
 		for i, v := range dstExpect {
 			if v != rt.Dst[i] {
@@ -82,9 +82,9 @@ func TestAllRun(t *testing.T) {
 		}
 
 		rfExpect := []string{
-			filepath.Join(baseExpect, "SEED001/Result/100.csv"),
-			filepath.Join(baseExpect, "SEED001/Result/200.csv"),
-			filepath.Join(baseExpect, "SEED001/Result/500.csv"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Result/100.csv"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Result/200.csv"),
+			filepath.Join(baseExpect, "Sigma0.1000/SEED001/Result/500.csv"),
 		}
 		for i, v := range rfExpect {
 			if v != rt.ResultFile[i] {
@@ -239,9 +239,9 @@ TIME ,Signal
 		}
 
 		expects := []string{
-			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui", rt.Dst[0], rt.SPI[0]),
-			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui", rt.Dst[1], rt.SPI[1]),
-			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui", rt.Dst[2], rt.SPI[2]),
+			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s &> wv.log", rt.Dst[0], rt.SPI[0], rt.ACE),
+			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s &> wv.log", rt.Dst[1], rt.SPI[1], rt.ACE),
+			fmt.Sprintf("cd %s && hspice -mt 2 -i %s -o ./hspice &> ./hspice.log && wv -k -ace_no_gui %s &> wv.log", rt.Dst[2], rt.SPI[2], rt.ACE),
 		}
 
 		for i, v := range expects {

@@ -107,8 +107,8 @@ func tryMkRunDstDir(srt *RunTask) error {
 	base := filepath.Join(srt.Simulation.DstDir, fmt.Sprintf("VtpVolt%.4f_VtnVolt%.4f", srt.Simulation.Vtp.Voltage, srt.Simulation.Vtn.Voltage))
 	srt.Base = base
 	for i, v := range srt.Simulation.Monte {
-		srt.Dst = append(srt.Dst, filepath.Join(base, fmt.Sprintf("SEED%03d/Monte%s", srt.SEED, v)))
-		rltdir := filepath.Join(base, fmt.Sprintf("SEED%03d/Result/", srt.SEED))
+		srt.Dst = append(srt.Dst, filepath.Join(base, fmt.Sprintf("Sigma%.4f/SEED%03d/Monte%s", srt.Simulation.Vtn.Sigma, srt.SEED, v)))
+		rltdir := filepath.Join(base, fmt.Sprintf("Sigma%.4f/SEED%03d/Result/", srt.Simulation.Vtn.Sigma, srt.SEED))
 		srt.ResultFile = append(srt.ResultFile, filepath.Join(rltdir, fmt.Sprintf("%s.csv", v)))
 
 		// Directory作る
@@ -349,15 +349,11 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
-	log.Println("MkDir :", task.Base)
-
 	// ACE
 	if err := tryMkRunACE(&task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
-
-	log.Println("Write ACE to ", task.ACE)
 
 	// Addfile
 	if err := tryMkRunAddfile(&task); err != nil {
@@ -365,23 +361,17 @@ func run(task RunTask) (SRunSummary, error) {
 		return summary, err
 	}
 
-	log.Println("Write Addfile to ", task.Addfile)
-
 	// SPI
 	if err := tryMkRunSPI(&task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
 
-	log.Println("Write SPI to ", task.SPI[0])
-
 	// XMLs
 	if err := tryCopyRunXmls(task); err != nil {
 		summary.FinishTime = time.Now()
 		return summary, err
 	}
-
-	log.Println("Write Xmls")
 
 	// コマンド生成
 	commands, err := mkRunCommand(task)
@@ -394,7 +384,7 @@ func run(task RunTask) (SRunSummary, error) {
 	// spinner
 	spin := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
 	spin.Suffix = "Running... "
-	spin.FinalMSG = "Simulation Set had finished!!\n"
+	spin.FinalMSG = "\033[1;39mSimulation Set had finished!!\033[0;39m\n"
 	spin.Start()
 	defer spin.Stop()
 
