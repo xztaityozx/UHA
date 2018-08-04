@@ -95,4 +95,10 @@ func TestAllSRun(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+
+	t.Run("006 rmeove", func(t *testing.T) {
+		os.RemoveAll(rst.Dst)
+		os.RemoveAll(rst.Sim)
+		os.RemoveAll(rst.BaseDir)
+	})
 }

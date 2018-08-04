@@ -18,6 +18,7 @@ type SlackMessage struct {
 	Failed       int
 	StartTime    time.Time
 	FinishedTime time.Time
+	SubMessage   string
 }
 
 var SlackNoNotify bool
@@ -41,7 +42,7 @@ func Post(config SlackConfig, message SlackMessage) error {
 		return nil
 	}
 	api := slack.New(config.Token)
-	text := fmt.Sprintf("<@%s> こちらはUHA botです。シミュレーションが終わりましたよ。\n:seikou: %d 個 :sippai: %d 個\n開始時間 : %s\n終了時間 : %s", config.User, message.Succsess, message.Failed, message.StartTime.Format("2006/01/02/15:04.05"), message.FinishedTime.Format("2006/01/02/15:04.05"))
+	text := fmt.Sprintf("<@%s> こちらはUHA botです。シミュレーションが終わりましたよ。\n%s\n:seikou: %d 個 :sippai: %d 個\n開始時間 : %s\n終了時間 : %s", config.User, message.SubMessage, message.Succsess, message.Failed, message.StartTime.Format("2006/01/02/15:04.05"), message.FinishedTime.Format("2006/01/02/15:04.05"))
 	param := slack.PostMessageParameters{
 		AsUser: true,
 	}
