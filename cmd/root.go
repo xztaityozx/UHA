@@ -27,6 +27,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/c-bata/go-prompt"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -67,15 +68,14 @@ func init() {
 	viper.SetDefault("Simulation", Simulation{
 		Monte:  DEF_MOTES,
 		Range:  Range{Start: "2.5ns", Step: "7.5ns", Stop: "17.5ns"},
-		SimDir: "",
-		DstDir: "",
+		SimDir: "/tmp",
+		DstDir: "/tmp",
 		Signal: "N2",
 		Vtn:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
 		Vtp:    Node{Voltage: 0.6, Sigma: 0.0, Deviation: 1.0},
 	})
 	viper.SetDefault("Repositorys", []Repository{})
 	viper.SetDefault("TaskDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "task"))
-	viper.SetDefault("DoneDir", path.Join(os.Getenv("HOME"), ".config", "UHA", "done"))
 	viper.SetDefault("SpreadSheet", SpreadSheet{})
 	viper.SetDefault("Simulation.SEED", 1)
 
@@ -108,6 +108,13 @@ func initConfig() {
 
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal(err)
+	}
+
+	if !IsAccurateConfig(cfgFile) {
+		log.Println("\033[1;31mConfigが変っぽいですが大丈夫ですか？(y/n)\033[0;39m")
+		if y := prompt.Input(">>> ", completer); y != "y" && y != "yes" {
+			log.Fatal(`https://github.com/xztaityozx/UHA/blob/master/doc/setting.md を見てみてください`)
+		}
 	}
 
 	//dir

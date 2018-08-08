@@ -28,11 +28,11 @@ import (
 
 var Version UHAVersion = UHAVersion{
 	Major:    1,
-	Minor:    6,
-	Build:    58,
-	Revision: 1,
+	Minor:    7,
+	Build:    59,
+	Revision: 2,
 	Status:   "Beta",
-	Date:     "2018/08/04",
+	Date:     "2018/08/08",
 }
 
 type UHAVersion struct {
