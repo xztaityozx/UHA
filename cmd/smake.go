@@ -72,7 +72,11 @@ var smakeCmd = &cobra.Command{
 
 func smakeTask(nt NSeedTask) error {
 	t := time.Now().Format("20060102150405")
-	f := fmt.Sprintf("%s_N%d.json", t, nt.Count)
+	f := fmt.Sprintf("%sVtp%.4fVtn%.4f_Sigma%.4f_N%d.json",
+		t,
+		nt.Simulation.Vtp.Voltage,
+		nt.Simulation.Vtn.Voltage,
+		nt.Simulation.Vtn.Sigma, nt.Count)
 
 	p := filepath.Join(ReserveSRunDir, f)
 	b, err := json.MarshalIndent(nt, "", "    ")
