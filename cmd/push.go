@@ -96,8 +96,7 @@ Usage:
 func getPushData(dir string) (PushData, error) {
 
 	pd := PushData{
-		Data: []interface{}{},
-		//Data:   Count(dir),
+		Data:   GetPushData(dir),
 		ColRow: config.SpreadSheet.ColRow,
 	}
 
@@ -221,7 +220,7 @@ var RangeSEEDCount bool
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
-	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+	pushCmd.Flags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
 	pushCmd.PersistentFlags().BoolP("ignore-sigma", "G", false, "Sigmaの値を除外します")
 	pushCmd.PersistentFlags().String("Id", "", "SpreadSheetのIDです")
 	pushCmd.PersistentFlags().StringP("name", "n", "", "SpreadSheetのシート名です")
