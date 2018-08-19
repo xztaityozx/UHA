@@ -47,11 +47,13 @@ Usage:
 		fOnly, _ := cmd.Flags().GetBool("failure-only")
 
 		wd, _ := os.Getwd()
+
+		fmt.Println(GetSigma(wd))
+
 		res := GetAggregateDataAll(wd)
 		if cum {
 			get := CumulativeSum(&res)
 			PrintAggregateData(&get, fOnly)
-			log.Println("Cumulative")
 			return
 		}
 
@@ -173,7 +175,7 @@ func PrintAggregateData(ads *[]AggregateData, failureOnly bool) {
 	}
 
 	for i, v := range *ads {
-		fmt.Println(i, v.Lines, v.Failure)
+		fmt.Println(i+1, v.Lines, v.Failure)
 	}
 }
 
