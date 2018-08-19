@@ -25,14 +25,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/mattn/go-pipeline"
 	"github.com/spakin/awk"
 	"github.com/spf13/cobra"
 )
@@ -46,167 +45,204 @@ Usage:
 	UHA count
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		dir, _ := os.Getwd()
-		if len(args) != 0 {
-			dir = args[0]
-		}
+		cum, _ := cmd.Flags().GetBool("Cumulative")
+		fOnly, _ := cmd.Flags().GetBool("failure-only")
 
-		agg, err := cmd.PersistentFlags().GetBool("aggregate")
-		if err != nil {
-			log.Fatal(err)
-		}
-		only, err := cmd.PersistentFlags().GetBool("only")
-		if err != nil {
-			log.Fatal(err)
-		}
+		wd, _ := os.Getwd()
 
-		if agg {
-			r, f, err := dirAggregate(dir)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if only {
-				fmt.Println(f)
-			} else {
-				fmt.Println(r, f)
-			}
-		} else {
-			for _, v := range Count(dir) {
-				fmt.Println(v)
-			}
+		s := spinner.New(spinner.CharSets[35], 50*time.Millisecond)
+		s.Suffix = " Counting... "
+		s.Prefix = "UHA "
+		s.FinalMSG = "Finished!!\n"
+		s.Start()
+		log.Println("Get Sigma")
+		sigma := GetSigma(wd)
+
+		log.Println("Get AggregateData All")
+		res := GetAggregateDataAll(wd)
+		if cum {
+			log.Println("CumulativeSum")
+			get := CumulativeSum(&res)
+			res = get
 		}
+		s.Stop()
+
+		fmt.Println(sigma)
+		PrintAggregateData(&res, fOnly)
 	},
 }
 
-func countup(p string) (int, int, error) {
-	b, err := ioutil.ReadFile(p)
-	if err != nil {
-		return -1, -1, err
-	}
-	s := awk.NewScript()
-	s.Begin = func(s *awk.Script) { s.State = 0 }
-	s.AppendStmt(
-		func(s *awk.Script) bool {
-			return s.F(0).Float64() >= 0.4 && s.F(3).Float64() >= 0.4
-		}, func(s *awk.Script) {
-			s.State = s.State.(int) + 1
-		})
-
-	r := strings.NewReader(string(b))
-	if err := s.Run(r); err != nil {
-		return s.NR, -1, err
-	}
-
-	return s.NR, s.State.(int), nil
-
+type AggregateData struct {
+	Lines    int
+	Failure  int
+	FileName string
 }
 
-func Count(wd string) []interface{} {
-	var rt []interface{}
-
-	if err := os.Chdir(wd); err != nil {
-		log.Fatal(err)
+func NewAggregateData(f string) (AggregateData, error) {
+	fp, err := os.OpenFile(f, os.O_RDONLY, 0644)
+	defer fp.Close()
+	if err != nil {
+		return AggregateData{}, err
 	}
 
-	wl := len(wd)
-	sigma := wd[wl-6 : wl-1]
+	s := awk.NewScript()
+	s.Begin = func(s *awk.Script) {
+		s.State = 0
+	}
+	s.AppendStmt(func(s *awk.Script) bool {
+		return s.F(1).Float64() >= countFirstFilter &&
+			s.F(2).Float64() >= countSecondFilter &&
+			s.F(3).Float64() >= countThirdFilter
+	}, func(s *awk.Script) {
+		s.State = s.State.(int) + 1
+	})
+	if err := s.Run(fp); err != nil {
+		return AggregateData{}, err
+	}
 
-	if RangeSEEDCount {
-		c := exec.Command("bash", "-c", "cd ../ && basename $(pwd) | sed 's/RangeSEED\\|_\\|Sigma\\|Monte.*$//g'")
-		o, err := c.CombinedOutput()
-		if err != nil {
-			log.Fatal(string(o))
+	return AggregateData{
+		Failure:  s.State.(int),
+		Lines:    s.NR,
+		FileName: filepath.Base(f),
+	}, nil
+}
+
+// dirにあるcsvをAggregateDataにしてからファイル名でソートして返す
+func GetAggregateDataAll(dir string) []AggregateData {
+	var rt []AggregateData
+	rec, fin := aggWorker(dir)
+	for {
+		select {
+		case res := <-rec:
+			rt = append(rt, res)
+		case <-fin:
+			sort.Slice(rt, func(i, j int) bool {
+				return rt[i].FileName < rt[j].FileName
+			})
+			return rt
 		}
+	}
+}
 
-		sigma = string(o)
+func GetSigma(dir string) float64 {
+	if RangeSEEDCount {
+		dir = filepath.Dir(dir)
+		base := filepath.Base(dir)
+		if len(base) < 40 {
+			log.Fatal("Invaild dir name")
+		}
+		f, fe := strconv.ParseFloat(base[35:41], 64)
+		if fe != nil {
+			log.Fatal(fe)
+		}
+		return f
 	}
 
-	rt = append(rt, sigma)
+	dir = filepath.Dir(filepath.Dir(dir))
+	base := filepath.Base(dir)
 
-	// 数え上げ
-	b, err := pipeline.Output(
-		[]string{"ls", "-1"},
-		[]string{"grep", ".csv"},
-		[]string{"sort", "-n"},
-	)
+	if len(base) < 5 {
+		log.Fatal("Invaild dir name")
+	}
+	f, err := strconv.ParseFloat(base[5:], 64)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return f
+}
 
-	files := strings.Split(string(b), "\n")
-	for _, v := range files {
-		if len(v) == 0 {
-			continue
-		}
-		_, cnt, err := countup(filepath.Join(wd, v))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		rt = append(rt, cnt)
-		//if only {
-		//fmt.Println(cnt)
-		//} else {
-		//fmt.Println(v, cnt)
-		//}
+func GetPushData(p string) []interface{} {
+	var rt []interface{}
+	rt = append(rt, GetSigma(p))
+	for _, v := range GetAggregateDataAll(p) {
+		rt = append(rt, v.Failure)
 	}
 	return rt
 }
 
-// ディレクトリ
-func dirAggregate(dir string) (int, int, error) {
-	// 移動する
-	if err := os.Chdir(dir); err != nil {
-		return -1, -1, err
+// 累積和
+func CumulativeSum(ads *[]AggregateData) []AggregateData {
+	lines := 0
+	sum := 0
+	var rt []AggregateData
+	for _, v := range *ads {
+		lines += v.Lines
+		sum += v.Failure
+		rt = append(rt, AggregateData{
+			Failure: sum,
+			Lines:   lines,
+		})
+	}
+	return rt
+}
+
+func PrintAggregateData(ads *[]AggregateData, failureOnly bool) {
+	if failureOnly {
+		for _, v := range *ads {
+			fmt.Println(v.Failure)
+		}
+		return
 	}
 
-	b, err := pipeline.Output(
-		[]string{"ls", "-1"},
-		[]string{"grep", ".csv"},
-		[]string{"sort", "-n"},
-	)
+	for i, v := range *ads {
+		fmt.Println(i+1, v.Lines, v.Failure)
+	}
+}
+
+// s is b ?
+func (s AggregateData) Compare(t AggregateData) bool {
+	return s.Failure == t.Failure &&
+		s.Lines == t.Lines &&
+		s.FileName == t.FileName
+}
+
+// gorutine
+func aggWorker(path string) (<-chan AggregateData, <-chan bool) {
+	fp, err := ioutil.ReadDir(path)
+	var wg sync.WaitGroup
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	files := strings.Split(string(b), "\n")
-
-	size := 0
-	failure := 0
-
-	var wg sync.WaitGroup
-	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
-	s.Suffix = " Counting..."
-	s.FinalMSG = "Aggregated\n"
-	s.Start()
-	defer s.Stop()
-
-	for _, v := range files {
-		if len(v) == 0 {
-			continue
-		}
-		wg.Add(1)
-
-		go func(v string) {
-			defer wg.Done()
-			n, cnt, err := countup(filepath.Join(dir, v))
-			if err != nil {
-				log.Fatal(err)
+	rec := make(chan AggregateData, len(fp))
+	fin := make(chan bool)
+	limit := make(chan struct{}, 10)
+	go func() {
+		for _, v := range fp {
+			file := filepath.Join(path, v.Name())
+			ext := filepath.Ext(file)
+			if ext != ".csv" {
+				continue
 			}
-			size += n
-			failure += cnt
-		}(v)
-	}
-	wg.Wait()
+			wg.Add(1)
+			go func(p string) {
+				limit <- struct{}{}
+				defer wg.Done()
 
-	return size, failure, nil
+				res, err := NewAggregateData(p)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				rec <- res
+				<-limit
+			}(file)
+		}
+		wg.Wait()
+		fin <- false
+	}()
+
+	return rec, fin
 }
 
-var RangeSEEDCount bool
+var countFirstFilter, countSecondFilter, countThirdFilter float64
 
 func init() {
 	rootCmd.AddCommand(countCmd)
-	countCmd.PersistentFlags().BoolP("aggregate", "A", false, "ディレクトリ以下のファイルを1つのデータの集合としてカウントします")
-	countCmd.PersistentFlags().BoolP("only", "o", false, "不良数だけを出力します")
-	countCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+
+	countCmd.Flags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+	countCmd.Flags().BoolP("Cumulative", "C", false, "累積和を出力します")
+	countCmd.Flags().Float64Var(&countFirstFilter, "firstF", 0.4, "1カラム目のフィルターです")
+	countCmd.Flags().Float64Var(&countSecondFilter, "secondF", 0.0, "2カラム目のフィルターです")
+	countCmd.Flags().Float64Var(&countThirdFilter, "thirdF", 0.4, "3カラム目のフィルターです")
+	countCmd.Flags().BoolP("failure-only", "F", false, "不良数とシグマだけを表示します")
 }

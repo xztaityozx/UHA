@@ -1,5 +1,10 @@
 package cmd
 
+import (
+	"encoding/json"
+	"io/ioutil"
+)
+
 type Config struct {
 	Simulation  Simulation
 	TaskDir     string
@@ -73,4 +78,19 @@ type SSColRow struct {
 type PushData struct {
 	ColRow SSColRow
 	Data   []interface{}
+}
+
+func IsAccurateConfig(f string) bool {
+	b, err := ioutil.ReadFile(f)
+	if err != nil {
+		return false
+	}
+
+	var cfg Config = Config{
+		TaskDir: "[[[[Failed]]]]",
+	}
+	if err := json.Unmarshal(b, &cfg); err != nil {
+		return false
+	}
+	return cfg.TaskDir != "[[[[Failed]]]]"
 }

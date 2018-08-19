@@ -47,13 +47,18 @@ UHA [--config [cfgFile]] [command] [flag]
 ### count
 
 ```sh
-UHA count [--help]
+UHA count [-C,--Cumulative|-F,--failure-only|--firstF float|--secondF float|--thirdF float]
 ```
 
 
 
 現在のディレクトリにあるCSVファイルを見つけて、不良数を数え上げます。
-
+- `-C,--Cumulative`
+  - 不良数を累積和します
+- `-F,--failure-only`
+  - 不良数だけを出力します
+- `--firstF,--secondF,--thirdF float`
+  - 1カラム目、2カラム目、3カラム目がfloat以上だった時、不良とします。すべてAndです
 
 
 ### get
@@ -97,7 +102,7 @@ UHA list [--one,-1|--long,-l]
 ### make
 
 ```sh
-UHA make [-D,--default|--sigma [sigma]|-y,--yes|-h,--help]
+UHA make [--SEED int|-N,--VtnVoltage float|-P,--VtpVoltage float|-D,--default|-h,--help|-o,--out string|--sigma float|-y,--yes]
 ```
 
 
@@ -105,7 +110,12 @@ UHA make [-D,--default|--sigma [sigma]|-y,--yes|-h,--help]
 シミュレーションタスクを作るコマンドです。オプション無しで実行すると、インタラクティブにタスクを生成できます。タスクは `~/.config/UHA/task`以下に保存されます
 
 
-
+- `--SEED int`
+  - SEEDを指定します
+- `-N,--VtnVoltage|-P,--VtpVoltage float`
+  - Vtn,Vtpのしきい値電圧です。設定ファイルより優先度が高いです
+- `-o,--out`
+  - シミュレーションの書き出し先です
 - `-D,--default`
   - `.UHA.json`の設定値をそのままでタスクを発行します
 - `--sigma`
@@ -118,12 +128,19 @@ UHA make [-D,--default|--sigma [sigma]|-y,--yes|-h,--help]
 ### push
 
 ```sh
-UHA push [--help]
+UHA push [--Id string|-R,--RangeSEED|-h,--help|-G,--ignore-sigma|-n,--name string]
 ```
 
+Google SpreadSheetにデータを書き込みます
 
-
-Google SpreadSheetにデータを書き込みます。書き込むデータは最後に`UHA count`で得たデータです。
+- `--Id string`
+  - スプレッドシートのIDです
+- `-R,--RangeSEED`
+  - RangeSEEDシミュレーションの結果をPushします
+- `-F,--ignore-sigma`
+  - Sigmaを省いてPushします
+- `-n,--name`
+  - シートの名前です
 
 
 
@@ -148,15 +165,16 @@ UHA rmake [-n,--number] start step stop/number
 ### run
 
 ```sh
-UHA run [--all|-C,--continue|-h,--help|-n,number [num]]
+UHA run [--GC|--all|-C,--continue|-h,--help|--no-notify|-n,number [num]]
 ```
-
-
 
 発行済のタスクを実行します。
 
 
-
+- `--GC`
+  - 結果のCSV以外を削除します
+- `--no-notify`
+  - Slackに通知しません
 - `--all`
   - 発行済のタスクをすべて実行します
 - `-C,--continue`
@@ -190,7 +208,7 @@ UHA smake [-h,--help|-n,--number [num]|-S,--sigma [sigma]|-T,--times [t]]
 ### srun
 
 ```sh
-UHA srun [--all|-C,--continue|-h,--help|-n,--number [num]|-P,--parallel [num]]
+UHA srun [--GC|--all|-C,--continue|-h,--help|--no-notify|-n,--number [num]|-P,--parallel [num]|--start int|-S,--summary]
 ```
 
 
@@ -199,6 +217,14 @@ UHA srun [--all|-C,--continue|-h,--help|-n,--number [num]|-P,--parallel [num]]
 
 
 
+- `--GC`
+  - 結果のCSV以外を削除します
+- `--no-notify`
+  - Slackに通知しません
+- `--start int`
+  - SEEDの初期値を指定します
+- `-S,--summary`
+  - サマリーを出力します
 - `--all` 
   - すべてのタスクを実行します
 - `-C,--continue`
@@ -220,13 +246,10 @@ UHA srun [--all|-C,--continue|-h,--help|-n,--number [num]|-P,--parallel [num]]
 ### upgrade
 
 ```sh
-UHA upgrade [-b,--branch [BRANCH]]
+UHA upgrade
 ```
 
 UHAをアップグレードします
-
-- `-b,--branch [BRANCH]`
-  - PullしてくるBranchを指定できます
 
 ### version
 
