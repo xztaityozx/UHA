@@ -43,7 +43,7 @@ Usage:
 	UHA count
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cum, _ := cmd.Flags().GetBool("CumulativeSum")
+		cum, _ := cmd.Flags().GetBool("Cumulative")
 		fOnly, _ := cmd.Flags().GetBool("failure-only")
 
 		wd, _ := os.Getwd()
