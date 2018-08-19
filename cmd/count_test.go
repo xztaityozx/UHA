@@ -93,13 +93,13 @@ func TestAllCount(t *testing.T) {
 
 	t.Run("004_GetSigma", func(t *testing.T) {
 		RangeSEEDCount = true
-		actual := GetSigma("/path/to/RangeSEED_Vtn0.0000Vtp0.0000_Sigma1.1111_Monte0000/Result")
+		actual := GetSigma("/path/to/RangeSEED_Vtn0.0000Vtp-0.0000_Sigma1.1111_Monte0000/Result")
 		expect := 1.1111
 		if actual != expect {
 			t.Fatal(actual, "is not", expect)
 		}
 		RangeSEEDCount = false
-		actual = GetSigma("/path/to/VtpVolt0.000_VtnVolt0.000/Sigma1.1111/SEED000/Result")
+		actual = GetSigma("/path/to/VtpVolt-0.000_VtnVolt0.000/Sigma1.1111/SEED000/Result")
 		expect = 1.1111
 		if actual != expect {
 			t.Fatal(actual, "is not", expect)

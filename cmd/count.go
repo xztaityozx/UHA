@@ -121,7 +121,7 @@ func GetSigma(dir string) float64 {
 		if len(base) < 40 {
 			log.Fatal("Invaild dir name")
 		}
-		f, fe := strconv.ParseFloat(base[34:40], 64)
+		f, fe := strconv.ParseFloat(base[35:41], 64)
 		if fe != nil {
 			log.Fatal(fe)
 		}
