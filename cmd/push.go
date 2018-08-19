@@ -96,7 +96,8 @@ Usage:
 func getPushData(dir string) (PushData, error) {
 
 	pd := PushData{
-		Data:   Count(dir),
+		Data: []interface{}{},
+		//Data:   Count(dir),
 		ColRow: config.SpreadSheet.ColRow,
 	}
 
@@ -215,6 +216,9 @@ func saveToken(path string, token *oauth2.Token) {
 	}
 	json.NewEncoder(f).Encode(token)
 }
+
+var RangeSEEDCount bool
+
 func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")

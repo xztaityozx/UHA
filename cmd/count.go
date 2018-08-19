@@ -21,18 +21,10 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
-	"sync"
-	"time"
 
-	"github.com/briandowns/spinner"
-	"github.com/mattn/go-pipeline"
 	"github.com/spakin/awk"
 	"github.com/spf13/cobra"
 )
@@ -46,167 +38,67 @@ Usage:
 	UHA count
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		dir, _ := os.Getwd()
-		if len(args) != 0 {
-			dir = args[0]
-		}
-
-		agg, err := cmd.PersistentFlags().GetBool("aggregate")
-		if err != nil {
-			log.Fatal(err)
-		}
-		only, err := cmd.PersistentFlags().GetBool("only")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if agg {
-			r, f, err := dirAggregate(dir)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if only {
-				fmt.Println(f)
-			} else {
-				fmt.Println(r, f)
-			}
-		} else {
-			for _, v := range Count(dir) {
-				fmt.Println(v)
-			}
-		}
 	},
 }
 
-func countup(p string) (int, int, error) {
-	b, err := ioutil.ReadFile(p)
+type AggregateData struct {
+	Lines   int
+	Failure int
+}
+
+func NewAggregateData(f string) (AggregateData, error) {
+	fp, err := os.OpenFile(f, os.O_RDONLY, 0644)
+	defer fp.Close()
 	if err != nil {
-		return -1, -1, err
+		return AggregateData{}, err
 	}
+
 	s := awk.NewScript()
-	s.Begin = func(s *awk.Script) { s.State = 0 }
-	s.AppendStmt(
-		func(s *awk.Script) bool {
-			return s.F(0).Float64() >= 0.4 && s.F(3).Float64() >= 0.4
-		}, func(s *awk.Script) {
-			s.State = s.State.(int) + 1
-		})
-
-	r := strings.NewReader(string(b))
-	if err := s.Run(r); err != nil {
-		return s.NR, -1, err
+	s.Begin = func(s *awk.Script) {
+		s.State = 0
+	}
+	s.AppendStmt(func(s *awk.Script) bool {
+		return s.F(1).Float64() >= countFirstFilter &&
+			s.F(2).Float64() >= countSecondFilter &&
+			s.F(3).Float64() >= countThirdFilter
+	}, func(s *awk.Script) {
+		s.State = s.State.(int) + 1
+	})
+	if err := s.Run(fp); err != nil {
+		return AggregateData{}, err
 	}
 
-	return s.NR, s.State.(int), nil
-
+	return AggregateData{
+		Failure: s.State.(int),
+		Lines:   s.NR,
+	}, nil
 }
 
-func Count(wd string) []interface{} {
-	var rt []interface{}
-
-	if err := os.Chdir(wd); err != nil {
-		log.Fatal(err)
-	}
-
-	wl := len(wd)
-	sigma := wd[wl-6 : wl-1]
-
-	if RangeSEEDCount {
-		c := exec.Command("bash", "-c", "cd ../ && basename $(pwd) | sed 's/RangeSEED\\|_\\|Sigma\\|Monte.*$//g'")
-		o, err := c.CombinedOutput()
-		if err != nil {
-			log.Fatal(string(o))
-		}
-
-		sigma = string(o)
-	}
-
-	rt = append(rt, sigma)
-
-	// 数え上げ
-	b, err := pipeline.Output(
-		[]string{"ls", "-1"},
-		[]string{"grep", ".csv"},
-		[]string{"sort", "-n"},
-	)
+func GetAggregateDataAll(dir string) []AggregateData {
+	f, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatal(err)
+		log.Fata(err)
 	}
 
-	files := strings.Split(string(b), "\n")
-	for _, v := range files {
-		if len(v) == 0 {
+	for _, v := range f {
+		path := filepath.Join(dir, v.Name())
+		ext := filepath.Ext(path)
+		if ext != "ext" {
 			continue
 		}
-		_, cnt, err := countup(filepath.Join(wd, v))
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		rt = append(rt, cnt)
-		//if only {
-		//fmt.Println(cnt)
-		//} else {
-		//fmt.Println(v, cnt)
-		//}
 	}
-	return rt
 }
 
-// ディレクトリ
-func dirAggregate(dir string) (int, int, error) {
-	// 移動する
-	if err := os.Chdir(dir); err != nil {
-		return -1, -1, err
-	}
-
-	b, err := pipeline.Output(
-		[]string{"ls", "-1"},
-		[]string{"grep", ".csv"},
-		[]string{"sort", "-n"},
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	files := strings.Split(string(b), "\n")
-
-	size := 0
-	failure := 0
-
-	var wg sync.WaitGroup
-	s := spinner.New(spinner.CharSets[14], 50*time.Millisecond)
-	s.Suffix = " Counting..."
-	s.FinalMSG = "Aggregated\n"
-	s.Start()
-	defer s.Stop()
-
-	for _, v := range files {
-		if len(v) == 0 {
-			continue
-		}
-		wg.Add(1)
-
-		go func(v string) {
-			defer wg.Done()
-			n, cnt, err := countup(filepath.Join(dir, v))
-			if err != nil {
-				log.Fatal(err)
-			}
-			size += n
-			failure += cnt
-		}(v)
-	}
-	wg.Wait()
-
-	return size, failure, nil
-}
-
-var RangeSEEDCount bool
+var countFirstFilter, countSecondFilter, countThirdFilter float64
 
 func init() {
 	rootCmd.AddCommand(countCmd)
-	countCmd.PersistentFlags().BoolP("aggregate", "A", false, "ディレクトリ以下のファイルを1つのデータの集合としてカウントします")
-	countCmd.PersistentFlags().BoolP("only", "o", false, "不良数だけを出力します")
-	countCmd.PersistentFlags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+
+	countCmd.Flags().BoolVarP(&RangeSEEDCount, "RangeSEED", "R", false, "RangeSEEDシミュレーションの結果を数え上げます")
+	countCmd.Flags().BoolP("Cumulative", "C", false, "累積和を出力します")
+	countCmd.Flags().BoolP("print-sigma", "S", false, "Sigmaの値も出力します")
+	countCmd.Flags().Float64Var(&countFirstFilter, "firstF", 0.4, "1カラム目のフィルターです")
+	countCmd.Flags().Float64Var(&countSecondFilter, "secondF", 0.0, "2カラム目のフィルターです")
+	countCmd.Flags().Float64Var(&countThirdFilter, "thirdF", 0.4, "3カラム目のフィルターです")
 }
