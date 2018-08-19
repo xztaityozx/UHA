@@ -29,7 +29,9 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spakin/awk"
 	"github.com/spf13/cobra"
 )
@@ -48,15 +50,24 @@ Usage:
 
 		wd, _ := os.Getwd()
 
-		fmt.Println(GetSigma(wd))
+		s := spinner.New(spinner.CharSets[35], 50*time.Millisecond)
+		s.Suffix = " Counting... "
+		s.Prefix = "UHA "
+		s.FinalMSG = "Finished!!\n"
+		s.Start()
+		log.Println("Get Sigma")
+		sigma := GetSigma(wd)
 
+		log.Println("Get AggregateData All")
 		res := GetAggregateDataAll(wd)
 		if cum {
+			log.Println("CumulativeSum")
 			get := CumulativeSum(&res)
-			PrintAggregateData(&get, fOnly)
-			return
+			res = get
 		}
+		s.Stop()
 
+		fmt.Println(sigma)
 		PrintAggregateData(&res, fOnly)
 
 	},
