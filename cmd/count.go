@@ -69,7 +69,6 @@ Usage:
 
 		fmt.Println(sigma)
 		PrintAggregateData(&res, fOnly)
-
 	},
 }
 
