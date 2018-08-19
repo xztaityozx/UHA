@@ -51,6 +51,7 @@ Usage:
 		if cum {
 			get := CumulativeSum(&res)
 			PrintAggregateData(&get, fOnly)
+			log.Println("Cumulative")
 			return
 		}
 
@@ -206,7 +207,6 @@ func aggWorker(path string) (<-chan AggregateData, <-chan bool) {
 				defer wg.Done()
 
 				res, err := NewAggregateData(p)
-				log.Println(res)
 				if err != nil {
 					log.Fatal(err)
 				}
