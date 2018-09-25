@@ -154,6 +154,13 @@ func Push(pd *PushData, id string, sheet string) {
 	}
 }
 
+func ToColumn(num int) string {
+	base := 26
+	for num > 0 {
+		a := num % base
+	}
+}
+
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(ctx context.Context, credentialFile string) *http.Client {
 	b, err := ioutil.ReadFile(credentialFile)
