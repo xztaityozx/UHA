@@ -143,7 +143,7 @@ func Push(pd *PushData, id string, sheet string) {
 		cr.Next = cr.Start
 		cr.RowStart += len(pd.Data)
 	} else {
-		cr.Next = string(cr.Next[0] + 1)
+		cr.Next = NextColumn(cr.Next)
 	}
 
 	config.SpreadSheet.ColRow = cr
@@ -154,11 +154,27 @@ func Push(pd *PushData, id string, sheet string) {
 	}
 }
 
-func ToColumn(num int) string {
-	base := 26
-	for num > 0 {
-		a := num % base
+func NextColumn(cr string) string {
+	var box []int
+	for i := len(cr) - 1; i >= 0; i-- {
+		box = append(box, int(cr[i]-'A'))
 	}
+	box[0]++
+	for i := 0; i < len(cr)-1; i++ {
+		if box[i] >= 26 {
+			box[i+1] += box[i] - 25
+		}
+		box[i] = box[i] % 26
+	}
+	if box[len(cr)-1] >= 26 {
+		box = append(box, box[len(cr)-1]%26)
+		box[len(cr)-1] %= 26
+	}
+	rt := ""
+	for _, v := range box {
+		rt = string('A'+v) + rt
+	}
+	return rt
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
