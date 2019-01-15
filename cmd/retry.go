@@ -145,6 +145,8 @@ func (rt RetryTask) Run() {
 		limit <- struct{}{}
 		defer wg.Done()
 
+		log.Println("UHA retry: Start Task", idx)
+
 		_, err := srun(rst, rt.GC)
 		if err != nil {
 			if rt.Continue {
