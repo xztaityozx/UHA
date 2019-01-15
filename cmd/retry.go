@@ -39,8 +39,15 @@ import (
 // retryCmd represents the retry command
 var retryCmd = &cobra.Command{
 	Use:   "retry",
-	Short: "",
-	Long:  ``,
+	Short: "失敗したシミュレーションを再実行するサブコマンドです",
+	Long: `UHA retry [-N, --VtnVoltage [float]] [-P, --VtpVoltage [float]] [-C, --continue] [-p, --parallel [int]] [-T, --times [int]] [-S, --sigma [float]] [SEEDList file]
+
+[SEEDList file]に記述されているSEEDを使ってシミュレーションを並列実行します
+SEEDListのフォーマットはSEED値が1行1個書かれているテキストファイルです
+省略するとStdInから読み取ります
+
+ここで設定できない値はconfigの値と同じになります
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var gc, conti bool
 		var err error
