@@ -194,7 +194,7 @@ func (rt RetryTask) BuildRangeSEEDTaskList() []RangeSEEDTask {
 
 	for _, i := range rt.SEEDList {
 		rst = append(rst, RangeSEEDTask{
-			Monte:   string(rt.Times),
+			Monte:   fmt.Sprint(rt.Times),
 			BaseDir: config.Simulation.DstDir,
 			Sim:     config.Simulation.SimDir,
 			SEED:    i,
