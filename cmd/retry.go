@@ -219,7 +219,7 @@ func init() {
 
 	retryCmd.Flags().Bool("GC", false, "最後に掃除をします")
 	retryCmd.Flags().BoolP("continue", "C", false, "どこかでシミュレーションが失敗しても続けます")
-	retryCmd.Flags().IntP("parallel", "P", 2, "並列実行する個数です")
+	retryCmd.Flags().IntP("parallel", "p", 2, "並列実行する個数です")
 	retryCmd.Flags().Float64P("VtnVoltage", "N", 0.6, "Vtnのしきい値電圧です")
 	retryCmd.Flags().Float64P("VtpVoltage", "P", -0.6, "Vtpのしきい値電圧です")
 	retryCmd.Flags().IntP("times", "T", 5000, "一回当たりのシミュレーション回数です")
