@@ -454,7 +454,5 @@ func init() {
 	srunCmd.PersistentFlags().IntP("number", "n", 1, "実行するタスクの個数です。default : 1")
 	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
-	srunCmd.PersistentFlags().BoolP("summary", "S", true, "Summaryを出力します")
-	srunCmd.PersistentFlags().Bool("GC", false, "最後に掃除をします")
 	srunCmd.PersistentFlags().BoolVar(&SlackNoNotify, "no-notify", false, "Slackに通知しません")
 }

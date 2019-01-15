@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // smakeCmd represents the smake command
@@ -102,4 +103,8 @@ func init() {
 	smakeCmd.PersistentFlags().IntP("times", "T", 50000, "モンテカルロの回数です")
 	smakeCmd.PersistentFlags().Float64P("sigma", "S", config.Simulation.Vtn.Sigma, "シグマの値を指定します")
 	smakeCmd.PersistentFlags().IntP("number", "n", 1, "SEEDの個数です")
+	smakeCmd.Flags().Float64P("VtpVoltage", "P", 0, "Vtpのしきい値電圧です")
+	smakeCmd.Flags().Float64P("VtnVoltage", "N", 0, "Vtnのしきい値電圧です")
+	viper.BindPFlag("Simulation.Vtp.Voltage", smakeCmd.Flags().Lookup("VtpVoltage"))
+	viper.BindPFlag("Simulation.Vtn.Voltage", smakeCmd.Flags().Lookup("VtnVoltage"))
 }
