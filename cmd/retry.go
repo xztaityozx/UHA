@@ -150,6 +150,7 @@ func (rt RetryTask) Run() {
 			if rt.Continue {
 				summary = append(summary, RetrySummary{rst.SEED, false})
 				log.Println("Task", idx, "had failed...")
+				log.Println(err)
 			} else {
 				PostFailed(config.SlackConfig, err)
 				log.Fatal(err)
