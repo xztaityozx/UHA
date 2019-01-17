@@ -93,7 +93,8 @@ SEEDListのフォーマットはSEED値が1行1個書かれているテキスト
 		}
 
 		rt := NewRetryTask(file, times, prlel, vtn, vtp, sigma, gc, conti)
-		rt.Run()
+		msg := rt.Run()
+		Post(config.SlackConfig, msg)
 	},
 }
 
@@ -134,7 +135,7 @@ func NewRetryTask(r io.Reader, t, p int, vtn, vtp, sigma float64, gc, con bool) 
 	return rt
 }
 
-func (rt RetryTask) Run() {
+func (rt RetryTask) Run() SlackMessage {
 	tasks := rt.BuildRangeSEEDTaskList()
 	spin := spinner.New(spinner.CharSets[18], 50*time.Millisecond)
 	spin.Suffix = " UHA retrying... "
@@ -179,13 +180,22 @@ func (rt RetryTask) Run() {
 
 	wg.Wait()
 
+	msg := SlackMessage{}
+
 	for _, v := range summary {
 		status := "Success"
 		if !v.Status {
 			status = "Failed"
 		}
 		fmt.Printf("%d: %s\n", v.SEED, status)
+		if status == "Success" {
+			msg.Failed++
+		} else {
+			msg.Succsess++
+		}
 	}
+
+	return msg
 }
 
 type RetrySummary struct {

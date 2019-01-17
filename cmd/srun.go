@@ -451,6 +451,7 @@ func init() {
 	rootCmd.AddCommand(srunCmd)
 	srunCmd.PersistentFlags().Bool("all", false, "すべて実行します")
 	srunCmd.PersistentFlags().BoolP("continue", "C", false, "どこかでシミュレーションが失敗しても続けます")
+	srunCmd.PersistentFlags().Bool("GC", false, "最後に掃除します")
 	srunCmd.PersistentFlags().IntP("number", "n", 1, "実行するタスクの個数です。default : 1")
 	srunCmd.PersistentFlags().IntP("parallel", "P", 2, "並列実行する個数です。default : 2")
 	srunCmd.PersistentFlags().Int("start", 1, "SEEDの最初の値です")
