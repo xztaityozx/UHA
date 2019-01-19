@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -234,8 +235,55 @@ func (rt RetryTask) BuildRangeSEEDTaskList() []RangeSEEDTask {
 	return rst
 }
 
+// listUp サブコマンドP
+var listupCmd = &cobra.Command{
+	Use:   "list",
+	Short: "失敗したSEEDをリストアップします",
+	Long: `UHA retry listup [start int] [end int]
+
+失敗したSEEDをリストアップします．
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 2 {
+			log.Fatal("引数は2つ必要です")
+		}
+
+		start, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		end, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		files, err := ioutil.ReadDir(wd)
+		dic := make(map[int]bool)
+		for _, v := range files {
+			name := v.Name()
+			trimed := strings.Replace(name, "SEED", "", -1)
+			trimed = strings.Replace(trimed, ".csv", "", -1)
+
+			if seed, err := strconv.Atoi(trimed); err == nil {
+				dic[seed] = true
+			}
+		}
+
+		for i := start; i <= end; i++ {
+			if !dic[i] {
+				fmt.Println(i)
+			}
+		}
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(retryCmd)
+	retryCmd.AddCommand(listupCmd)
 
 	retryCmd.Flags().Bool("GC", false, "最後に掃除をします")
 	retryCmd.Flags().BoolP("continue", "C", false, "どこかでシミュレーションが失敗しても続けます")
