@@ -189,9 +189,9 @@ func (rt RetryTask) Run() SlackMessage {
 		}
 		fmt.Printf("%d: %s\n", v.SEED, status)
 		if status == "Success" {
-			msg.Failed++
-		} else {
 			msg.Succsess++
+		} else {
+			msg.Failed++
 		}
 	}
 
